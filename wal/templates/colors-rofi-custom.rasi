@@ -1,0 +1,8 @@
+* {{
+    background: {background};
+    background-alt: {background}DD;   /* Menggunakan warna background yang sama dengan sedikit transparansi */
+    foreground: {color7};             /* Menggunakan color7 (light gray) alih-alih foreground untuk mengurangi kontras */
+    selected: {color6};               /* Menggunakan color6 (cyan) yang lebih soft untuk elemen terpilih */
+    active: {color14};                /* Menggunakan color14 (light cyan) untuk elemen aktif */
+    urgent: {color5};                 /* Menggunakan color5 (magenta) yang lebih lembut daripada merah */
+}}

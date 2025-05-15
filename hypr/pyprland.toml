@@ -1,0 +1,21 @@
+[pyprland]
+plugins = ["layout_center", "scratchpads"]
+
+
+[scratchpads.term]
+animation = "fromTop"
+command = "kitty --class kitty-dropterm"
+class = "kitty-dropterm"
+size = "70% 90%"
+max_size = "1920px 100%"
+margin = 50
+
+[scratchpads.spotify]
+animation = "fromRight"
+command = "spotify"
+class = "Spotify"
+lazy = true
+size = "70% 90%"  
+max_size = "1920px 1080px"
+margin = 20
+
