@@ -17,3 +17,7 @@ vim.api.nvim_create_autocmd({ 'InsertLeavePre', 'TextChanged', 'TextChangedP' },
     vim.cmd('silent! write')
   end
 })
+
+vim.cmd [[
+  highlight EndOfBuffer guifg=NONE guibg=NONE
+]]

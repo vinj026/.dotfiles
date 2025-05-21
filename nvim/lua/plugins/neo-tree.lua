@@ -9,13 +9,22 @@ return {
     },
     config = function()
       -- Set highlight untuk transparansi
-      vim.api.nvim_set_hl(0, "NeoTreeNormal", { bg = "none" })
-      vim.api.nvim_set_hl(0, "NeoTreeWinSeparator", { fg = "#1f1d2e", bg = "none" })
+      vim.cmd [[
+        highlight NeoTreeNormal guibg=NONE ctermbg=NONE
+        highlight NeoTreeNormalNC guibg=NONE ctermbg=NONE
+        highlight NeoTreeEndOfBuffer guibg=NONE ctermbg=NONE
+        highlight WinSeparator guibg=NONE guifg=NONE
+        set fillchars+=vert:\  
+      ]]
 
-      -- Setup NeoTree
+      -- Setup NeoTree tanpa separator
       require("neo-tree").setup({
         window = {
           width = 30,
+          position = "left",
+          mappings = {},
+          -- Disable border separator dari Neo-tree
+          border = "none",
         },
         default_component_configs = {
           indent = {
@@ -32,5 +41,5 @@ return {
         },
       })
     end,
-  }
+  },
 }
