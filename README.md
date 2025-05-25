@@ -1,1 +1,1 @@
-![Preview](Picture/preview.png)
+![Preview](Pictures/preview.png)
