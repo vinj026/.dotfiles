@@ -1,0 +1,68 @@
+[config]
+version_check = true
+reload_apps = true
+
+[config.reload_apps_list]
+kitty = true
+gtk_theme = true
+
+[config.wallpaper]
+command = "swww"
+arguments = [ "img", "-t", "outer", "--transition-duration", "1.5", "--transition-step", "255", "--transition-fps", "60", "-f", "Nearest",]
+set = true
+
+[templates.kitty]
+input_path = "~/.config/matugen/templates/kitty-colors.conf"
+output_path = "~/.config/kitty/colors.conf"
+
+post_hook = "kitty @ set-colors -a -c ~/.config/kitty/colors.conf"
+
+[templates.hyprland]
+input_path = "~/.config/matugen/templates/hyprland-colors.conf"
+output_path = "~/.config/hypr/colors.conf"
+post_hook = "hyprctl reload"
+
+[templates.pywal]
+input_path = "~/.config/matugen/templates/pywal-colors"
+output_path = "~/.cache/wal/colors"
+
+[templates.pywaljson]
+input_path = "~/.config/matugen/templates/pywal-colors.json"
+output_path = "~/.cache/wal/colors.json"
+
+[templates.starship]
+input_path = "~/.config/matugen/templates/starship-colors.toml"
+output_path = "~/.config/starship-colors.toml"
+
+[templates.rofi]
+input_path = "~/.config/matugen/templates/rofi-colors.rasi"
+output_path = "~/.config/rofi/matugen/matugen-rofi.rasi"
+
+[templates.qt5ct]
+input_path = "~/.config/matugen/templates/qtct-colors.conf"
+output_path = "~/.config/qt5ct/colors/matugen.conf"
+
+[templates.qt6ct]
+input_path = "~/.config/matugen/templates/qtct-colors.conf"
+output_path = "~/.config/qt6ct/colors/matugen.conf"
+
+[templates.gtk3]
+input_path = "~/.config/matugen/templates/gtk-colors.css"
+output_path = "~/.config/gtk-3.0/gtk.css"
+
+[templates.gtk4]
+input_path = "~/.config/matugen/templates/gtk-colors.css"
+output_path = "~/.config/gtk-4.0/gtk.css"
+
+[templates.kvantum]
+input_path = "~/.config/matugen/templates/matugen.kvconfig"
+output_path = "~/.config/Kvantum/matugen/matugen.kvconfig"
+
+[templates.nvim]
+input_path = '~/.config/nvim-nvchad/pywal/matugen.lua'
+output_path = '~/.cache/wal/base46-dark.lua'
+
+[templates.alacritty]
+input_path = '~/.config/matugen/templates/alacritty.toml'
+output_path = '~/.config/alacritty/colors.toml'
+
