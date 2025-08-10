@@ -1,0 +1,38 @@
+[config]
+version_check = false
+
+[templates.m3colors]
+input_path = '~/.config/matugen/templates/colors.json'
+output_path = '~/.local/state/quickshell/user/generated/colors.json'
+
+
+[templates.labwc]
+input_path = './templates/labwc-theme'
+output_path = '~/.themes/OB-Sweet-Dark/openbox-3/themerc'
+post_hook = 'labwc --reconfigure'
+
+[templates.waybar]
+input_path = '~/.config/matugen/templates/waybar-style.css'
+output_path = '~/.config/waybar/style.css'
+
+[templates.gtk3]
+input_path = '~/.config/matugen/templates/gtk/gtk-colors.css'
+output_path = '~/.config/gtk-3.0/gtk.css'
+
+[templates.gtk4]
+input_path = '~/.config/matugen/templates/gtk/gtk-colors.css'
+output_path = '~/.config/gtk-4.0/colors.css'
+
+[templates.rofi]
+input_path = '~/.config/matugen/templates/colors.rasi'
+output_path = '~/.config/rofi/colors/colors.rasi'
+
+
+[templates.starship]
+input_path = '~/.config/matugen/templates/starship.toml'
+output_path = '~/.config/starship.toml'
+
+[templates.kitty]
+input_path = '~/.config/matugen/templates/kitty-colors.conf'
+output_path = '~/.config/kitty/themes/matugen-theme.conf'
+post_hook = 'kitty +kitten themes --reload-in=all matugen-theme'

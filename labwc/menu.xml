@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu>
+<menu id="root-menu" label="root-menu">
+  <menu id="Accessories" label="Accessories">
+    <item label="Emoji Selector">
+      <action name="Execute"><command>plasma-emojier</command></action>
+    </item>
+    <item label="Files">
+      <action name="Execute"><command>nautilus --new-window</command></action>
+    </item>
+    <item label="Gammastep Indicator">
+      <action name="Execute"><command>gammastep-indicator</command></action>
+    </item>
+    <item label="ksnip">
+      <action name="Execute"><command>ksnip</command></action>
+    </item>
+    <item label="Kvantum Manager">
+      <action name="Execute"><command>kvantummanager</command></action>
+    </item>
+    <item label="Neovim">
+      <action name="Execute"><command>nvim</command></action>
+    </item>
+    <item label="Screenshot Helper">
+      <action name="Execute"><command>/usr/bin/kde-material-you-colors-screenshot-helper</command></action>
+    </item>
+    <item label="Software Token">
+      <action name="Execute"><command>stoken-gui</command></action>
+    </item>
+    <item label="Software Token (small)">
+      <action name="Execute"><command>stoken-gui --small</command></action>
+    </item>
+    <item label="xgps">
+      <action name="Execute"><command>xgps</command></action>
+    </item>
+    <item label="xgpsspeed">
+      <action name="Execute"><command>xgpsspeed</command></action>
+    </item>
+  </menu> <!-- Accessories -->
+  <menu id="Development" label="Development">
+    <item label="CMake">
+      <action name="Execute"><command>cmake-gui</command></action>
+    </item>
+    <item label="Icon Browser">
+      <action name="Execute"><command>yad-icon-browser</command></action>
+    </item>
+    <item label="Meld">
+      <action name="Execute"><command>meld</command></action>
+    </item>
+    <item label="Qt Assistant">
+      <action name="Execute"><command>assistant6</command></action>
+    </item>
+    <item label="Qt D-Bus Viewer">
+      <action name="Execute"><command>qdbusviewer6</command></action>
+    </item>
+    <item label="Qt Linguist">
+      <action name="Execute"><command>linguist6</command></action>
+    </item>
+    <item label="Qt Widgets Designer">
+      <action name="Execute"><command>designer6</command></action>
+    </item>
+    <item label="Visual Studio Code">
+      <action name="Execute"><command>/usr/bin/code</command></action>
+    </item>
+  </menu> <!-- Development -->
+  <menu id="Graphics" label="Graphics">
+    <item label="FontForge">
+      <action name="Execute"><command>fontforge</command></action>
+    </item>
+  </menu> <!-- Graphics -->
+  <menu id="Internet" label="Internet">
+    <item label="Advanced Network Configuration">
+      <action name="Execute"><command>nm-connection-editor</command></action>
+    </item>
+    <item label="Avahi SSH Server Browser">
+      <action name="Execute"><command>/usr/bin/bssh</command></action>
+    </item>
+    <item label="Avahi VNC Server Browser">
+      <action name="Execute"><command>/usr/bin/bvnc</command></action>
+    </item>
+    <item label="Brave">
+      <action name="Execute"><command>brave</command></action>
+    </item>
+    <item label="Firefox">
+      <action name="Execute"><command>/usr/lib/firefox/firefox</command></action>
+    </item>
+    <item label="Packet Tracer 8.2.2">
+      <action name="Execute"><command>/usr/lib/packettracer/packettracer</command></action>
+    </item>
+  </menu> <!-- Internet -->
+  <menu id="Multimedia" label="Multimedia">
+    <item label="mpv Media Player">
+      <action name="Execute"><command>mpv --player-operation-mode=pseudo-gui --</command></action>
+    </item>
+    <item label="OBS Studio">
+      <action name="Execute"><command>/usr/bin/flatpak run --branch=stable --arch=x86_64 --command=obs com.obsproject.Studio</command></action>
+    </item>
+    <item label="PulseAudio Volume Control">
+      <action name="Execute"><command>pavucontrol-qt</command></action>
+    </item>
+    <item label="Qt V4L2 test Utility">
+      <action name="Execute"><command>qv4l2</command></action>
+    </item>
+    <item label="Qt V4L2 video capture utility">
+      <action name="Execute"><command>qvidcap</command></action>
+    </item>
+    <item label="VLC media player">
+      <action name="Execute"><command>/usr/bin/vlc --started-from-file</command></action>
+    </item>
+    <item label="Volume Control">
+      <action name="Execute"><command>pavucontrol</command></action>
+    </item>
+  </menu> <!-- Multimedia -->
+  <menu id="Settings" label="Settings">
+    <item label="Advanced Network Configuration">
+      <action name="Execute"><command>nm-connection-editor</command></action>
+    </item>
+    <item label="Firewall">
+      <action name="Execute"><command>/usr/bin/firewall-config</command></action>
+    </item>
+    <item label="GTK Settings">
+      <action name="Execute"><command>nwg-look</command></action>
+    </item>
+    <item label="KDE System Settings">
+      <action name="Execute"><command>systemsettings</command></action>
+    </item>
+    <item label="Kvantum Manager">
+      <action name="Execute"><command>kvantummanager</command></action>
+    </item>
+    <item label="PulseAudio Volume Control">
+      <action name="Execute"><command>pavucontrol-qt</command></action>
+    </item>
+    <item label="Qt6 Settings">
+      <action name="Execute"><command>qt6ct</command></action>
+    </item>
+    <item label="System Settings">
+      <action name="Execute"><command>systemsettings</command></action>
+    </item>
+    <item label="Volume Control">
+      <action name="Execute"><command>pavucontrol</command></action>
+    </item>
+    <item label="YAD settings">
+      <action name="Execute"><command>yad-settings</command></action>
+    </item>
+  </menu> <!-- Settings -->
+  <menu id="System" label="System">
+    <item label="Avahi Zeroconf Browser">
+      <action name="Execute"><command>/usr/bin/avahi-discover</command></action>
+    </item>
+    <item label="btop++">
+      <action name="Execute"><command>btop</command></action>
+    </item>
+    <item label="Dolphin">
+      <action name="Execute"><command>dolphin</command></action>
+    </item>
+    <item label="EndeavourOS apps info">
+      <action name="Execute"><command>eos-apps-info</command></action>
+    </item>
+    <item label="EndeavourOS log tool">
+      <action name="Execute"><command>/usr/bin/eos-log-tool</command></action>
+    </item>
+    <item label="EndeavourOS Quickstart Installer">
+      <action name="Execute"><command>eos-quickstart</command></action>
+    </item>
+    <item label="eos-update">
+      <action name="Execute"><command>bash -c "echo '==> eos-update --aur'; eos-update --aur; eos-sleep-counter 60"</command></action>
+    </item>
+    <item label="Firewall">
+      <action name="Execute"><command>/usr/bin/firewall-config</command></action>
+    </item>
+    <item label="fish">
+      <action name="Execute"><command>fish</command></action>
+    </item>
+    <item label="Hardware Locality lstopo">
+      <action name="Execute"><command>lstopo</command></action>
+    </item>
+    <item label="kitty">
+      <action name="Execute"><command>kitty</command></action>
+    </item>
+    <item label="Menu Editor">
+      <action name="Execute"><command>kmenuedit</command></action>
+    </item>
+    <item label="OpenJDK Java 24 Console">
+      <action name="Execute"><command>/usr/lib/jvm/java-24-openjdk/bin/jconsole</command></action>
+    </item>
+    <item label="OpenJDK Java 24 Shell">
+      <action name="Execute"><command>/usr/lib/jvm/java-24-openjdk/bin/jshell</command></action>
+    </item>
+    <item label="Reflector Simple">
+      <action name="Execute"><command>/usr/bin/reflector-simple</command></action>
+    </item>
+    <item label="UXTerm">
+      <action name="Execute"><command>uxterm</command></action>
+    </item>
+    <item label="Welcome">
+      <action name="Execute"><command>eos-welcome --once</command></action>
+    </item>
+    <item label="XTerm">
+      <action name="Execute"><command>xterm</command></action>
+    </item>
+  </menu> <!-- System -->
+  <menu id="Other" label="Other">
+    <item label="Rofi">
+      <action name="Execute"><command>rofi -show</command></action>
+    </item>
+    <item label="Rofi Theme Selector">
+      <action name="Execute"><command>rofi-theme-selector</command></action>
+    </item>
+  </menu> <!-- Other -->
+</menu> <!-- root-menu -->
+</openbox_menu>

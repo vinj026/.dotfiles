@@ -1,0 +1,152 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <!-- Theme -->
+  <theme>
+    <name>OB-Sweet-Dark</name>
+    <cornerRadius>1</cornerRadius>
+    <font name="Iosevka" size="11"/>
+    <dropShadows>yes</dropShadows>
+  <titlebar>
+    <layout>close,max,iconify:</layout>
+    <showTitle>no</showTitle>
+  </titlebar>
+  </theme>
+  <!-- Workspaces -->
+  <desktops number="5">
+    <names>
+      <name>Dev</name>
+      <name>Web</name>
+      <name>Media</name>
+      <name>Chat</name>
+      <name>Misc</name>
+    </names>
+    <popupTime>800</popupTime>
+  </desktops>
+  <!-- Keyboard Bindings -->
+  <keyboard>
+    <default/>
+    <!-- Terminal -->
+    <keybind key="W-Return">
+      <action name="Execute" command="kitty"/>
+    </keybind>
+    <!-- Close Window -->
+    <keybind key="W-Q">
+      <action name="Close"/>
+    </keybind>
+    <!-- Switch Workspace -->
+    <keybind key="W-1">
+      <action name="GoToDesktop" to="1"/>
+    </keybind>
+    <keybind key="W-2">
+      <action name="GoToDesktop" to="2"/>
+    </keybind>
+    <keybind key="W-3">
+      <action name="GoToDesktop" to="3"/>
+    </keybind>
+    <keybind key="W-4">
+      <action name="GoToDesktop" to="4"/>
+    </keybind>
+    <keybind key="W-5">
+      <action name="GoToDesktop" to="5"/>
+    </keybind>
+    <!-- Next/Prev Workspace -->
+    <keybind key="W-Left">
+      <action name="GoToDesktop" to="left"/>
+    </keybind>
+    <keybind key="W-Right">
+      <action name="GoToDesktop" to="right"/>
+    </keybind>
+    <!-- Send Window to Workspace -->
+    <keybind key="W-Shift-1">
+      <action name="SendToDesktop" to="1" follow="no"/>
+    </keybind>
+    <keybind key="W-Shift-2">
+      <action name="SendToDesktop" to="2" follow="no"/>
+    </keybind>
+    <keybind key="W-Shift-3">
+      <action name="SendToDesktop" to="3" follow="no"/>
+    </keybind>
+    <keybind key="W-Shift-4">
+      <action name="SendToDesktop" to="4" follow="no"/>
+    </keybind>
+    <keybind key="W-Shift-5">
+      <action name="SendToDesktop" to="5" follow="no"/>
+    </keybind>
+    <!-- Restart WM -->
+    <keybind key="W-R">
+      <action name="Reconfigure"/>
+    </keybind>
+    <!-- Exit WM -->
+    <keybind key="W-E">
+      <action name="Exit"/>
+    </keybind>
+<keybind key="W-Space">
+  <action name="Execute">
+        <command>rofi -show drun -theme ~/.config/rofi/laucher.rasi</command>
+  </action>
+</keybind>
+
+
+<keybind key="W-P">
+  <action name="Execute">
+    <command>~/.config/rofi/scripts/screenshot.sh</command>
+  </action>
+    </keybind>
+<keybind key="W-L">
+  <action name="Execute">
+    <command>~/.config/rofi/scripts/powermenu.sh</command>
+  </action>
+</keybind>
+
+<keybind key="W-T">
+ 
+       <action name="ToggleAlwaysOnTop" />
+
+</keybind>
+
+
+  </keyboard>
+  <!-- Mouse Bindings -->
+  <mouse>
+    <default/>
+    <context name="Root">
+      <mousebind button="Right" action="Press">
+        <action name="ShowMenu" menu="root-menu"/>
+      </mousebind>
+    </context>
+  </mouse>
+  <!-- Menu -->
+  <menu id="root-menu">
+    <item label="Terminal">
+      <action name="Execute" command="kitty"/>
+    </item>
+    <item label="Browser">
+      <action name="Execute" command="brave"/>
+    </item>
+    <separator/>
+    <item label="Reconfigure">
+      <action name="Reconfigure"/>
+    </item>
+    <item label="Exit">
+      <action name="Exit"/>
+    </item>
+  </menu>
+  <core>
+    <gap>10</gap>
+  </core>
+  <applications>
+  <application class="kitty">
+    <action name="Iconify"/>
+    </application>
+
+  </applications>
+<placement>
+  <policy>cascade</policy>
+  <cascadeOffset x="40" y="30" />
+</placement>
+  <libinput>
+    <device>
+      <naturalScroll>no</naturalScroll>
+    </device>
+  </libinput>
+</labwc_config>

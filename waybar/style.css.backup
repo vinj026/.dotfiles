@@ -1,0 +1,75 @@
+@define-color foreground #a8a8a8;
+@define-color foreground-inactive #aaaaaa;
+@define-color background #1a1a1a;
+@define-color item-bg #252525;
+
+* {
+    font-family: "Iosevka", monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1;
+    margin: 0;
+}
+
+#waybar {
+    color: @foreground;
+    background-color: @background;
+}
+
+#taskbar {
+  padding:1px;
+    text-shadow: none;
+}
+
+#taskbar button {
+  background: transparent;
+  border:none;
+  color: @foreground-inactive;
+  margin-left: 4px;
+  margin-right: 4px;
+
+}
+
+#taskbar button.active {
+  color: #ffffff;
+  font-weight: normal;
+}
+
+#taskbar button:hover {
+  color: #ffffff;
+  border:none;
+  outline:none;
+  text-shadow: none;
+  box-shadow: none;    
+}
+
+
+
+#cpu,
+#memory,
+#custom-kernel,
+#custom-power,
+#custom-diskfree,
+#battery,
+#backlight,
+#wireplumber,
+#network,
+#clock,
+#language,
+#pulseaudio,
+#tray {
+    border-radius: 4px;
+    margin: 4px 3px;
+    padding: 2px 2px;
+}
+
+#wireplumber,
+#battery,
+#idle_inhibitor,
+#mpris,
+#network {
+    padding: 0em 1em ;
+    border-radius:5px;
+}
+
+

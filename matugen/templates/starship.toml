@@ -1,0 +1,65 @@
+
+add_newline = false
+
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_state\
+$git_status\
+$cmd_duration\
+$line_break\
+$python\
+$character"""
+
+palette = 'colors'
+
+[palettes.colors]
+mustard = '#af8700' # contoh
+color1 = '{{colors.primary_fixed_dim.default.hex}}'
+color2 = '{{colors.on_primary.default.hex}}'
+color3 = '{{colors.on_surface_variant.default.hex}}'
+color4 = '{{colors.surface_container.default.hex}}'
+color5 = '{{colors.on_primary.default.hex}}'
+color6 = '{{colors.surface_dim.default.hex}}'
+color7 = '{{colors.surface.default.hex}}'
+color8 = '{{colors.primary.default.hex}}'
+color9 = '{{colors.tertiary.default.hex}}'
+
+# === Modules dengan warna dari Matugen ===
+
+[directory]
+style = "fg:color8"  # pake primary
+
+[character]
+success_symbol = "[ ](fg:color9)"  # tertiary
+error_symbol = "[ ](fg:color1)"    # primary_fixed_dim
+vimcmd_symbol = "[❮](fg:color2)"    # on_primary
+
+[git_branch]
+format = "[$branch]($style)"
+style = "fg:color3"  # on_surface_variant
+
+[git_status]
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](fg:color4) ($ahead_behind$stashed)]($style)"
+style = "fg:color5"
+conflicted = "​"
+untracked = "​"
+modified = "​"
+staged = "​"
+renamed = "​"
+deleted = "​"
+stashed = "≡"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "fg:color6"  # surface_dim
+
+[cmd_duration]
+format = "[$duration]($style) "
+style = "fg:color9"  # tertiary
+
+[python]
+format = "[$virtualenv]($style) "
+style = "fg:color7"  # surface
