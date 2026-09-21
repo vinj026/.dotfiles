@@ -1,0 +1,16 @@
+*.bak
+*.bak.*
+*.backup
+*.tmp
+*.log
+*~
+.DS_Store
+
+# Exclude temporary runtime files
+quickshell/scripts/rgb_state.json
+quickshell/scripts/test_rgb
+quickshell/scripts/loq-rgb/bin/
+quickshell/scripts/loq-rgb/obj/
+
+# Local cache
+.cache/

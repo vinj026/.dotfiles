@@ -1,0 +1,16 @@
+module qs.core
+
+singleton Colors     1.0 Colors.qml
+singleton Style      1.0 Style.qml
+singleton Audio      1.0 Audio.qml
+singleton Brightness 1.0 Brightness.qml
+singleton Mpris      1.0 Mpris.qml
+singleton Network    1.0 Network.qml
+singleton Notifications 1.0 Notifications.qml
+singleton ShellState 1.0 ShellState.qml
+singleton Battery     1.0 Battery.qml
+singleton Bluetooth   1.0 Bluetooth.qml
+singleton SystemInfo  1.0 SystemInfo.qml
+singleton DeviceStats 1.0 DeviceStats.qml
+MangoWC              1.0 MangoWC.qml
+

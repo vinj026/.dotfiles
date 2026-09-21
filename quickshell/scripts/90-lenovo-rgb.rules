@@ -1,0 +1,8 @@
+/* Allow members of wheel group to run loq-rgb without password prompt */
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.policykit.exec" &&
+        action.lookup("program") == "/home/vin/.config/quickshell/scripts/loq-rgb/bin/loq-rgb" &&
+        subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+    }
+});

@@ -1,0 +1,6 @@
+module qs.components.osd
+
+OsdVolume     1.0 OsdVolume.qml
+OsdBrightness 1.0 OsdBrightness.qml
+OsdMic        1.0 OsdMic.qml
+

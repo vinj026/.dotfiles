@@ -1,0 +1,22 @@
+{
+  "base":       "#181a27",
+  "mantle":     "#212330",
+  "surface":    "#2f334d",
+  "overlay0":   "#3b4261",
+  "overlay1":   "#545c7e",
+  "border":     "#2f334d",
+  "muted":      "#3b4261",
+  "subtext0":   "#727aac",
+  "subtext1":   "#c8d3f5",
+  "text":       "#c8d3f5",
+  "accent":     "#82aaff",
+  "accentDim":  "#c099ff",
+  "green":      "#c3e88d",
+  "teal":       "#c099ff",
+  "cyan":       "#82aaff",
+  "yellow":     "#c3e88d",
+  "peach":      "#c099ff",
+  "red":        "#ff757f",
+  "maroon":     "#ff757f",
+  "mauve":      "#c099ff"
+}

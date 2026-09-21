@@ -1,0 +1,13 @@
+module qs.windows
+
+MainBar       1.0 MainBar.qml
+Osd           1.0 Osd.qml
+Notifications 1.0 Notifications.qml
+Launcher      1.0 Launcher.qml
+ControlCenter 1.0 ControlCenter.qml
+WifiPicker    1.0 WifiPicker.qml
+BatteryProfilePicker 1.0 BatteryProfilePicker.qml
+NotificationCenter   1.0 NotificationCenter.qml
+MediaPopup           1.0 MediaPopup.qml
+WallpaperPicker      1.0 WallpaperPicker.qml
+Settings             1.0 Settings.qml

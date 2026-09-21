@@ -1,0 +1,18 @@
+module qs.components.bar
+
+Workspaces    1.0 Workspaces.qml
+Clock         1.0 Clock.qml
+Volume        1.0 Volume.qml
+Network       1.0 Network.qml
+Tray          1.0 Tray.qml
+MediaWidget   1.0 MediaWidget.qml
+NotifIndicator 1.0 NotifIndicator.qml
+Battery        1.0 Battery.qml
+MicIndicator   1.0 MicIndicator.qml
+StartButton    1.0 StartButton.qml
+RamIndicator   1.0 RamIndicator.qml
+TempIndicator  1.0 TempIndicator.qml
+RecordIndicator 1.0 RecordIndicator.qml
+PrivacyIndicator 1.0 PrivacyIndicator.qml
+
+

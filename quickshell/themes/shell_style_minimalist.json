@@ -1,0 +1,12 @@
+{
+  "styleMode": "minimalist",
+  "testPrivacy": true,
+  "barHeight": 32,
+  "opPanel": 0.85,
+  "fontMono": "Iosevka Nerd Font",
+  "fontSans": "Iosevka Nerd Font",
+  "showRam": false,
+  "showTemp": false,
+  "showMic": false,
+  "showTray": false
+}

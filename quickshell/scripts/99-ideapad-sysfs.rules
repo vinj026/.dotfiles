@@ -1,0 +1,4 @@
+# Grant wheel group write access to Lenovo IdeaPad sysfs controls
+ACTION=="add|change", SUBSYSTEM=="platform", DRIVERS=="ideapad_acpi", ATTR{conservation_mode}=="*", RUN+="/bin/chmod 0664 /sys%p/conservation_mode", RUN+="/bin/chgrp wheel /sys%p/conservation_mode"
+ACTION=="add|change", SUBSYSTEM=="power_supply", ATTR{charge_types}=="*", RUN+="/bin/chmod 0664 /sys%p/charge_types", RUN+="/bin/chgrp wheel /sys%p/charge_types"
+ACTION=="add|change", SUBSYSTEM=="leds", KERNEL=="*kbd*", ATTR{brightness}=="*", RUN+="/bin/chmod 0664 /sys%p/brightness", RUN+="/bin/chgrp wheel /sys%p/brightness"

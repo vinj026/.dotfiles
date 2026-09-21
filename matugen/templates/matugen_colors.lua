@@ -1,0 +1,17 @@
+-- Matugen Dynamic Colors for Neovim (Generated automatically)
+return {
+  bgBase = "{{ colors.surface_container_lowest.default.hex }}",
+  surface = "{{ colors.surface_container.default.hex }}",
+  surfaceVariant = "{{ colors.surface_variant.default.hex }}",
+  surfaceContainer = "{{ colors.surface_container_high.default.hex }}",
+  textPrimary = "{{ colors.on_surface.default.hex }}",
+  textMuted = "{{ colors.on_surface_variant.default.hex }}",
+  textDim = "{{ colors.outline.default.hex }}",
+  outline = "{{ colors.outline_variant.default.hex }}",
+  primary = "{{ colors.primary.default.hex }}",
+  textOnPrimary = "{{ colors.on_primary.default.hex }}",
+  primaryContainer = "{{ colors.primary_container.default.hex }}",
+  secondary = "{{ colors.secondary.default.hex }}",
+  tertiary = "{{ colors.tertiary.default.hex }}",
+  error = "{{ colors.error.default.hex }}",
+}

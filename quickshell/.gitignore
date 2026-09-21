@@ -1,0 +1,5 @@
+*.bak
+*~
+scripts/test_rgb
+scripts/loq-rgb/
+scripts/rgb_state.json

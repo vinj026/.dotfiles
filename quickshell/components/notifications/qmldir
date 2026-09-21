@@ -1,0 +1,3 @@
+module qs.components.notifications
+
+NotificationItem 1.0 NotificationItem.qml

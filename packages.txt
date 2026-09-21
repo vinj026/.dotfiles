@@ -1,0 +1,53 @@
+# ==============================================================================
+# REQUIRED PACKAGES FOR CACHYOS / ARCH LINUX
+# ==============================================================================
+
+# Window Manager & Compositor
+mangowm
+
+# Desktop Shell & Bar
+quickshell
+
+# Terminal Emulators
+kitty
+alacritty
+
+# Shell & Modern CLI Utilities
+fish
+fastfetch
+starship
+zoxide
+eza
+bat
+lazygit
+fzf
+ripgrep
+fd
+
+# Wallpaper Daemon & Material You Theming
+matugen-bin
+awww
+
+# Clipboard & Wayland Utilities
+cliphist
+wl-clipboard
+xdg-desktop-portal-wlr
+xdg-desktop-portal
+
+# Hardware & Audio Control
+brightnessctl
+wireplumber
+pipewire
+pipewire-pulse
+
+# GTK, Qt & Icon Theming
+adw-gtk-theme
+papirus-icon-theme
+qt5ct
+qt6ct
+
+# Core Fonts
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+ttf-meslo-nerd

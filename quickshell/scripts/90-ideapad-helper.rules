@@ -1,0 +1,8 @@
+/* Allow members of the wheel group to execute ideapad_helper.py via pkexec without a password prompt */
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.policykit.exec" &&
+        action.lookup("program") == "/home/vin/.config/quickshell/scripts/ideapad_helper.py" &&
+        subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+    }
+});

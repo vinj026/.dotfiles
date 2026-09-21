@@ -1,0 +1,82 @@
+/* GTK 3 Theme: everblush */
+@define-color accent_color #8ccf7e;
+@define-color accent_bg_color #8ccf7e;
+@define-color accent_fg_color #141b1e;
+
+@define-color window_bg_color #182024;
+@define-color window_fg_color #dadada;
+
+@define-color view_bg_color #141b1e;
+@define-color view_fg_color #dadada;
+
+@define-color headerbar_bg_color #232a2d;
+@define-color headerbar_fg_color #dadada;
+@define-color headerbar_border_color #323b3e;
+@define-color headerbar_backdrop_color #232a2d;
+
+@define-color card_bg_color #232a2d;
+@define-color card_fg_color #dadada;
+@define-color card_border_color #323b3e;
+
+@define-color popover_bg_color #283236;
+@define-color popover_fg_color #dadada;
+
+@define-color dialog_bg_color #283236;
+@define-color dialog_fg_color #dadada;
+
+@define-color destructive_color #e57474;
+@define-color destructive_bg_color #e57474;
+@define-color destructive_fg_color #141b1e;
+
+/* Legacy GTK 3 Theme Definitions */
+@define-color theme_bg_color #182024;
+@define-color theme_fg_color #dadada;
+@define-color theme_base_color #141b1e;
+@define-color theme_text_color #dadada;
+@define-color theme_selected_bg_color #8ccf7e;
+@define-color theme_selected_fg_color #141b1e;
+@define-color insensitive_bg_color #232a2d;
+@define-color insensitive_fg_color #283236;
+@define-color insensitive_base_color #182024;
+@define-color borders #323b3e;
+@define-color error_color #e57474;
+
+window {
+    background-color: @theme_bg_color;
+    color: @theme_fg_color;
+}
+
+headerbar {
+    background-color: @headerbar_bg_color;
+    color: @headerbar_fg_color;
+    border-color: @headerbar_border_color;
+}
+
+button {
+    background-color: @card_bg_color;
+    color: @theme_fg_color;
+    border-color: @borders;
+}
+
+button:hover {
+    background-color: @popover_bg_color;
+}
+
+button:checked, button:active {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+entry {
+    background-color: @theme_base_color;
+    color: @theme_text_color;
+    border-color: @borders;
+}
+
+entry:focus {
+    border-color: @accent_color;
+}
+
+scrollbar slider {
+    background-color: @surface_variant;
+}

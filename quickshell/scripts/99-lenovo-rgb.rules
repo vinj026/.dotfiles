@@ -1,0 +1,3 @@
+# Lenovo Legion / IdeaPad Gaming 4-Zone RGB Keyboard controller
+SUBSYSTEM=="usb", ATTRS{idVendor}=="048d", ATTRS{idProduct}=="c963", MODE="0666", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="048d", ATTRS{idProduct}=="c963", MODE="0666", TAG+="uaccess"

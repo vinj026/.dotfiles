@@ -1,0 +1,9 @@
+{
+  "barHeight": 30,
+  "opPanel": 0.85,
+  "fontMono": "Iosevka Nerd Font",
+  "fontSans": "Iosevka Nerd Font",
+  "showRam": true,
+  "showTemp": true,
+  "showMic": true,
+  "showTray": true

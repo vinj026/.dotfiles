@@ -1,0 +1,41 @@
+[config]
+prefer = "darkness"
+
+[templates.quickshell]
+input_path = "~/.config/matugen/templates/colors.json"
+output_path = "~/.cache/matugen/colors.json"
+
+[templates.mango]
+input_path = "~/.config/matugen/templates/theme.conf"
+output_path = "~/.config/mango/theme.conf"
+
+[templates.kitty]
+input_path = "~/.config/matugen/templates/kitty-theme.conf"
+output_path = "~/.config/kitty/theme.conf"
+
+[templates.alacritty]
+input_path = "~/.config/matugen/templates/alacritty-theme.toml"
+output_path = "~/.config/alacritty/theme.toml"
+
+[templates.gtk3]
+input_path = "~/.config/matugen/templates/gtk-3.0.css"
+output_path = "~/.config/gtk-3.0/gtk.css"
+
+[templates.gtk4]
+input_path = "~/.config/matugen/templates/gtk-4.0.css"
+output_path = "~/.config/gtk-4.0/gtk.css"
+
+[templates.qt6ct]
+input_path = "~/.config/matugen/templates/qt-colors.conf"
+output_path = "~/.config/qt6ct/colors/current.conf"
+
+[templates.qt5ct]
+input_path = "~/.config/matugen/templates/qt-colors.conf"
+output_path = "~/.config/qt5ct/colors/current.conf"
+
+[templates.neovim]
+input_path = "~/.config/matugen/templates/nvim-colors.json"
+output_path = "~/.cache/matugen/nvim-colors.json"
+post_hook = "pkill -SIGUSR1 nvim || true"
+
+
