@@ -23,7 +23,7 @@ Singleton {
     // Read max brightness once on startup
     Process {
         id: maxQuery
-        command: ["cat", "/sys/class/backlight/amdgpu_bl2/max_brightness"]
+        command: ["sh", "-c", "cat /sys/class/backlight/*/max_brightness 2>/dev/null | head -n1"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -36,7 +36,7 @@ Singleton {
     // Refresh brightness value
     Process {
         id: refreshQuery
-        command: ["cat", "/sys/class/backlight/amdgpu_bl2/brightness"]
+        command: ["sh", "-c", "cat /sys/class/backlight/*/brightness 2>/dev/null | head -n1"]
         stdout: StdioCollector {
             onStreamFinished: {
                 let val = parseInt(text.trim())
@@ -54,22 +54,38 @@ Singleton {
     // Poll on startup
     Component.onCompleted: refreshQuery.running = true
 
-    // Slow background poll every 5s as fallback
+    // Short delay timer: refresh brightness after our own brightnessctl calls
     Timer {
-        interval: 5000
-        running: true
-        repeat: true
+        id: refreshDelay
+        interval: 50
+        repeat: false
         onTriggered: refreshQuery.running = true
+    }
+
+    // Event-driven brightness monitoring via udev (replaces slow 1s polling loop)
+    Process {
+        id: udevMonitor
+        command: ["stdbuf", "-oL", "udevadm", "monitor", "-k", "-s", "backlight"]
+        running: true
+        stdout: SplitParser {
+            onRead: data => {
+                if (data.includes("change") && data.includes("backlight")) {
+                    refreshQuery.running = true
+                }
+            }
+        }
     }
 
     function addBrightness(delta) {
         Quickshell.execDetached(["brightnessctl", "set", (delta > 0 ? "+" : "") + Math.abs(delta) + "%"])
+        refreshDelay.restart()
     }
 
     function setBrightness(pct) {
         let clamped = Math.max(1, Math.min(100, Math.round(pct)))
         root.level = clamped
         Quickshell.execDetached(["brightnessctl", "set", clamped + "%"])
+        refreshDelay.restart()
     }
 
     readonly property string icon: {

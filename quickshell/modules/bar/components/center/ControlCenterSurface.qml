@@ -40,52 +40,68 @@ Item {
         }
     }
 
-    implicitWidth: root.currentView === "wifi" ? 320 : 410
-    implicitHeight: (root.currentView === "wifi"
-        ? (typeof wifiSurfaceView !== "undefined" ? wifiSurfaceView.implicitHeight : 262)
-        : (typeof mainLayout !== "undefined" ? mainLayout.implicitHeight : 262)) + 24
+    implicitWidth: root.currentView === "wifi" ? 300 : 600
+    implicitHeight: root.currentView === "wifi"
+        ? (typeof wifiSurfaceView !== "undefined" ? wifiSurfaceView.implicitHeight + 20 : 250)
+        : 240
+
+    width: implicitWidth
+    height: implicitHeight
 
     FontLoader {
         id: matSymbols
         source: "file:///home/vin/.local/share/fonts/MaterialSymbolsRounded-Filled.ttf"
     }
 
-    // ────────────────────────────────────────────────────────────
-    // Hardware & Status Probing
-    // ────────────────────────────────────────────────────────────
-    property bool wifiEnabled: true
-    property string wifiSsid: ""
-    property bool bluetoothEnabled: false
+    // Real System Hardware & State Bindings
+    readonly property bool wifiEnabled: C.Network.wifiEnabled
+    readonly property string wifiSsid: C.Network.ssid
+    readonly property bool bluetoothEnabled: C.Bluetooth.isPowered
 
-    property real volLevel: 0.50
-    property bool volMuted: false
+    readonly property real volLevel: C.Audio.volLevel / 100.0
+    readonly property bool volMuted: C.Audio.volMuted
 
-    property real brightLevel: 0.50
+    readonly property real brightLevel: C.Brightness.level / 100.0
 
-    property string netIp: "127.0.0.1"
-    property string netIfaceLabel: "LAN"
-    property string netRxFormatted: "0.0 B"
-    property string netTxFormatted: "0.0 B"
+    property string netIp: ""
+    property string netIfaceLabel: ""
+    property string netRxFormatted: "0.0 B/s"
+    property string netTxFormatted: "0.0 B/s"
     property var currentTime: new Date()
-    property bool powerMenuHovered: false
 
     Timer {
-        id: powerCloseTimer
-        interval: 250
-        repeat: false
-        onTriggered: {
-            root.powerMenuHovered = false;
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: root.currentTime = new Date()
+    }
+
+    Component.onCompleted: {
+        C.SystemInfo.refresh();
+        IdeapadService.refresh();
+        RgbService.refresh();
+        C.Network.refreshAll();
+    }
+
+    onActiveChanged: {
+        if (active) {
+            C.SystemInfo.refresh();
+            IdeapadService.refresh();
+            RgbService.refresh();
+            C.Network.refreshAll();
+            netTelemetryProc.running = true;
+            bandwidthProc.running = true;
         }
     }
 
-    function formatBytes(bytes) {
-        let b = Number(bytes) || 0;
-        if (b <= 0) return "0.0 B";
-        let units = ["B", "KB", "MB", "GB", "TB"];
-        let i = Math.floor(Math.log(b) / Math.log(1024));
+    function formatSpeed(bytesPerSec) {
+        if (!bytesPerSec || bytesPerSec <= 0) return "0.0 B/s";
+        let b = Number(bytesPerSec);
+        let units = ["B/s", "K/s", "M/s", "G/s"];
+        let i = Math.floor(Math.log(Math.max(1, b)) / Math.log(1024));
         i = Math.min(units.length - 1, Math.max(0, i));
         let val = b / Math.pow(1024, i);
-        return val.toFixed(1) + " " + units[i];
+        return val.toFixed(1) + units[i];
     }
 
     function getAmbientMoodIcon(dateObj) {
@@ -93,15 +109,13 @@ Item {
         let isNight = (h < 6 || h >= 18);
         let cond = (WeatherService.conditionText || "").toLowerCase();
 
-        if (cond.includes("storm")) return "\uebdc"; // thunderstorm
-        if (cond.includes("rain") || cond.includes("drizzle")) return "\ue814"; // rainy
-        if (cond.includes("snow")) return "\ueb3b"; // snowy
+        if (cond.includes("storm")) return "\uebdc";
+        if (cond.includes("rain") || cond.includes("drizzle")) return "\ue814";
+        if (cond.includes("snow")) return "\ueb3b";
         if (cond.includes("cloud") || cond.includes("overcast")) {
-            return isNight ? "\uf174" : "\ue2c6"; // partly_cloudy_night / partly_cloudy_day
+            return isNight ? "\uf174" : "\ue2c6";
         }
-
-        // Clear sky / default by time:
-        return isNight ? "\uf03d" : "\ue518"; // moon (nightlight) vs sun (light_mode)
+        return isNight ? "\uf03d" : "\ue518";
     }
 
     function getAmbientMoodIconColor(dateObj) {
@@ -109,235 +123,90 @@ Item {
         let isNight = (h < 6 || h >= 18);
         let cond = (WeatherService.conditionText || "").toLowerCase();
 
-        if (cond.includes("storm") || cond.includes("rain") || cond.includes("snow")) return "#74c0fc";
-        if (cond.includes("cloud") || cond.includes("overcast")) return isNight ? "#a5d8ff" : "#ffd43b";
-        return isNight ? "#a5d8ff" : "#fcc419";
+        if (cond.includes("storm") || cond.includes("rain") || cond.includes("snow")) return Theme.blue;
+        if (cond.includes("cloud") || cond.includes("overcast")) return isNight ? Theme.blue : Theme.yellow;
+        return isNight ? Theme.blue : Theme.yellow;
     }
 
-    function formatAestheticDate(dateObj) {
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const months = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
-        ];
-
-        let dayName = days[dateObj.getDay()];
-        let dateNum = dateObj.getDate();
-        let monthName = months[dateObj.getMonth()];
-
-        let h = dateObj.getHours();
-        let isNight = (h < 6 || h >= 18);
-
-        let period = "Night";
-        if (h >= 5 && h < 12) period = "Morning";
-        else if (h >= 12 && h < 17) period = "Afternoon";
-        else if (h >= 17 && h < 21) period = "Evening";
-
-        let cond = (WeatherService.conditionText || "").toLowerCase();
-        let t = Math.round(WeatherService.temp);
-
-        let mood = "";
-        if (cond.includes("storm")) mood = "Stormy";
-        else if (cond.includes("rain") || cond.includes("drizzle")) mood = "Rainy";
-        else if (cond.includes("snow")) mood = "Snowy";
-        else if (cond.includes("overcast")) mood = "Overcast";
-        else if (cond.includes("cloud")) mood = "Cloudy";
-        else if (cond.includes("clear") || cond.includes("sun")) {
-            mood = isNight ? "Clear" : (h >= 11 && h < 16 && t >= 28 ? "Sunny" : "Clear");
-        } else {
-            // Contextual fallback based on time and temp
-            if (isNight) {
-                mood = (t < 18) ? "Cool" : (t < 23) ? "Quiet" : "Peaceful";
-            } else {
-                mood = (t >= 31) ? "Warm" : (t >= 25) ? "Sunny" : (t < 18) ? "Crisp" : "Pleasant";
-            }
-        }
-
-        let tempStr = (WeatherService.isLoaded || WeatherService.temp) ? `${t}° · ` : "";
-        return `${mood} ${period} · ${tempStr}<i>${dayName}</i>, <i>${monthName}</i> ${dateNum}`;
-    }
-
-    // Network IP and Bandwidth Telemetry Check
     Process {
         id: netTelemetryProc
-        command: ["bash", "-c", "route_info=$(ip route get 1.1.1.1 2>/dev/null || ip route show default 2>/dev/null | head -n1)\n" +
-                  "dev=$(echo \"$route_info\" | grep -oP \"dev \\K\\S+\")\n" +
-                  "ip=$(echo \"$route_info\" | grep -oP \"src \\K\\S+\")\n" +
-                  "if [ -z \"$ip\" ] && [ -n \"$dev\" ]; then\n" +
-                  "    ip=$(ip -4 addr show \"$dev\" 2>/dev/null | grep -oP \"inet \\K\\S+\" | cut -d/ -f1 | head -n1)\n" +
-                  "fi\n" +
-                  "[ -z \"$dev\" ] && dev=\"lo\"\n" +
-                  "[ -z \"$ip\" ] && ip=\"127.0.0.1\"\n" +
-                  "type_label=\"LAN\"\n" +
-                  "if [[ \"$dev\" == wl* ]]; then type_label=\"WiFi\"\n" +
-                  "elif [[ \"$dev\" == tun* ]] || [[ \"$dev\" == wg* ]] || [[ \"$dev\" == *vpn* ]]; then type_label=\"VPN\"\n" +
-                  "elif [[ \"$dev\" == en* ]] || [[ \"$dev\" == eth* ]]; then type_label=\"Ethernet\"\n" +
-                  "fi\n" +
-                  "read rx_b tx_b <<< $(awk -v d=\"$dev:\" '$1==d {print $2, $10}' /proc/net/dev 2>/dev/null)\n" +
-                  "echo \"$ip|$dev $type_label|${rx_b:-0}|${tx_b:-0}\"\n"]
+        command: ["bash", "-c", "ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) {if($i==\"src\") ip=$(i+1); if($i==\"dev\") dev=$(i+1)}} END {print ip; print dev}'"]
+        running: false
         stdout: SplitParser {
             onRead: data => {
-                let parts = data.trim().split("|");
-                if (parts.length >= 4) {
-                    root.netIp = parts[0] || "127.0.0.1";
-                    root.netIfaceLabel = parts[1] || "LAN";
-                    root.netRxFormatted = root.formatBytes(parts[2]);
-                    root.netTxFormatted = root.formatBytes(parts[3]);
-                }
+                let lines = data.trim().split("\n");
+                if (lines.length >= 1 && lines[0] !== "") root.netIp = lines[0].trim();
+                if (lines.length >= 2 && lines[1] !== "") root.netIfaceLabel = lines[1].trim();
             }
         }
     }
 
-    // Wi-Fi Status Check
-    Process {
-        id: wifiQueryProc
-        command: ["bash", "-c", "echo \"$(nmcli radio wifi)|$(nmcli -t -f ACTIVE,SSID dev wifi | grep '^yes:' | cut -d: -f2 | head -n1)\""]
-        stdout: SplitParser {
-            onRead: data => {
-                let parts = data.trim().split("|");
-                root.wifiEnabled = (parts[0] === "enabled");
-                root.wifiSsid = parts[1] || "";
-            }
-        }
-    }
+    property real lastRxBytes: 0
+    property real lastTxBytes: 0
+    property real lastRxTime: 0
 
-    // Bluetooth Status Check
     Process {
-        id: btQueryProc
-        command: ["bash", "-c", "bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo 'on' || echo 'off'"]
+        id: bandwidthProc
+        command: ["bash", "-c", "awk -v iface=\"" + (root.netIfaceLabel || C.Network.wifiDevice || "wlan0") + "\" '$1 ~ iface {gsub(\":\", \"\", $1); print $2, $10}' /proc/net/dev 2>/dev/null"]
+        running: false
         stdout: SplitParser {
             onRead: data => {
-                root.bluetoothEnabled = (data.trim() === "on");
-            }
-        }
-    }
-
-    // Volume Status Check
-    Process {
-        id: volQueryProc
-        command: ["bash", "-c", "wpctl get-volume @DEFAULT_AUDIO_SINK@"]
-        stdout: SplitParser {
-            onRead: data => {
-                let trimmed = data.trim();
-                let match = trimmed.match(/Volume:\s+([0-9.]+)(\s+\[MUTED\])?/);
-                if (match) {
-                    root.volLevel = Math.max(0.0, Math.min(1.0, parseFloat(match[1]) || 0));
-                    root.volMuted = (match[2] !== undefined && match[2].length > 0);
-                }
-            }
-        }
-    }
-
-    // Brightness Status Check
-    Process {
-        id: brightQueryProc
-        command: ["bash", "-c", "brightnessctl -m | head -n1"]
-        stdout: SplitParser {
-            onRead: data => {
-                let parts = data.trim().split(",");
-                if (parts.length >= 4) {
-                    let pctStr = parts[3].replace("%", "");
-                    root.brightLevel = Math.max(0.05, Math.min(1.0, (parseFloat(pctStr) || 0) / 100.0));
+                let parts = data.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    let rx = parseFloat(parts[0]) || 0;
+                    let tx = parseFloat(parts[1]) || 0;
+                    let now = Date.now();
+                    if (root.lastRxTime > 0 && now > root.lastRxTime) {
+                        let dt = (now - root.lastRxTime) / 1000.0;
+                        if (dt > 0.2) {
+                            let rxSpeed = Math.max(0, (rx - root.lastRxBytes) / dt);
+                            let txSpeed = Math.max(0, (tx - root.lastTxBytes) / dt);
+                            root.netRxFormatted = root.formatSpeed(rxSpeed);
+                            root.netTxFormatted = root.formatSpeed(txSpeed);
+                        }
+                    }
+                    root.lastRxBytes = rx;
+                    root.lastTxBytes = tx;
+                    root.lastRxTime = now;
                 }
             }
         }
     }
 
     Timer {
-        id: pollTimer
-        interval: 1500
+        interval: 2000
+        running: root.active && root.currentView === "main"
         repeat: true
-        running: root.active
         triggeredOnStart: true
         onTriggered: {
-            root.currentTime = new Date();
-            wifiQueryProc.running = true;
-            btQueryProc.running = true;
-            volQueryProc.running = true;
-            brightQueryProc.running = true;
             netTelemetryProc.running = true;
-            C.SystemInfo.refresh();
+            bandwidthProc.running = true;
         }
-    }
-
-    Component.onCompleted: {
-        root.currentTime = new Date();
-        wifiQueryProc.running = true;
-        btQueryProc.running = true;
-        volQueryProc.running = true;
-        brightQueryProc.running = true;
-        netTelemetryProc.running = true;
-        C.SystemInfo.refresh();
-        IdeapadService.refresh();
-        RgbService.refresh();
-        C.Battery.refreshProfile();
-    }
-
-    onActiveChanged: {
-        if (root.active) {
-            root.currentView = WifiService.isOpen ? "wifi" : "main";
-            root.currentTime = new Date();
-            wifiQueryProc.running = true;
-            btQueryProc.running = true;
-            volQueryProc.running = true;
-            brightQueryProc.running = true;
-            netTelemetryProc.running = true;
-            C.SystemInfo.refresh();
-            IdeapadService.refresh();
-            RgbService.refresh();
-            C.Battery.refreshProfile();
-        } else {
-            powerCloseTimer.stop();
-            root.powerMenuHovered = false;
-            root.currentView = "main";
-            WifiService.close();
-        }
-    }
-
-    // ────────────────────────────────────────────────────────────
-    // Action Helpers
-    // ────────────────────────────────────────────────────────────
-    function toggleWifi() {
-        let newState = !root.wifiEnabled;
-        root.wifiEnabled = newState;
-        Quickshell.execDetached(["nmcli", "radio", "wifi", newState ? "on" : "off"]);
-        wifiCheckTimer.restart();
-    }
-
-    function toggleBluetooth() {
-        let newState = !root.bluetoothEnabled;
-        root.bluetoothEnabled = newState;
-        Quickshell.execDetached(["bluetoothctl", "power", newState ? "on" : "off"]);
-        btCheckTimer.restart();
     }
 
     function setVolumeFraction(val) {
-        let clamped = Math.max(0.0, Math.min(1.0, val));
-        root.volLevel = clamped;
-        root.volMuted = false;
-        Quickshell.execDetached(["wpctl", "set-volume", "-l", "1.0", "@DEFAULT_AUDIO_SINK@", clamped.toFixed(2)]);
+        C.Audio.setVolume(val * 100);
     }
 
     function toggleMute() {
-        root.volMuted = !root.volMuted;
-        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
-        volQueryProc.running = true;
+        C.Audio.toggleMute();
     }
 
     function setBrightnessFraction(val) {
-        let clamped = Math.max(0.05, Math.min(1.0, val));
-        root.brightLevel = clamped;
-        let pct = Math.round(clamped * 100);
-        Quickshell.execDetached(["brightnessctl", "set", pct + "%"]);
+        C.Brightness.setBrightness(val * 100);
     }
 
-    Timer { id: wifiCheckTimer; interval: 800; onTriggered: wifiQueryProc.running = true }
-    Timer { id: btCheckTimer; interval: 800; onTriggered: btQueryProc.running = true }
-    // ════════════════════════════════════════════════════════════
-    // M3 Vertical Expressive Slider Component (Volume & Brightness)
-    // ════════════════════════════════════════════════════════════
-    component M3VerticalSlider: Item {
-        id: vSliderRoot
+    function toggleWifi() {
+        C.Network.toggleWifi();
+    }
+
+    function toggleBluetooth() {
+        C.Bluetooth.togglePower();
+    }
+
+    // M3 Compact Horizontal Slider
+    component M3HorizontalSlider: Item {
+        id: hSliderRoot
 
         property real value: 0.0
         property bool isMuted: false
@@ -350,132 +219,165 @@ Item {
         signal moved(real val)
         signal iconClicked()
 
-        implicitWidth: 54
-        implicitHeight: 130
-
         readonly property real clampedVal: Math.max(0.0, Math.min(1.0, isMuted ? 0.0 : value))
 
-        // Ambient drop shadow beneath slider
-        Rectangle {
-            anchors.fill: parent
-            anchors.topMargin: 1
-            anchors.bottomMargin: -1
-            radius: 14
-            color: Qt.rgba(0, 0, 0, 0.18)
-            z: -1
+        // Nebula Compact Geometry Tokens
+        readonly property real trackHeight: 28
+        readonly property real handleHeight: 40
+        readonly property real handleWidth: 6
+        readonly property real pressedHandleWidth: 4
+        readonly property real handleGap: 4
+        readonly property real trackOuterCorner: 8
+        readonly property real _outer: Math.min(trackOuterCorner, trackHeight / 2)
+
+        readonly property bool pressed: hSliderMouse.pressed
+        property real _hw: pressed ? pressedHandleWidth : handleWidth
+        Behavior on _hw { NumberAnimation { duration: 90 } }
+
+        readonly property real _inset: Math.max(handleWidth, pressedHandleWidth) / 2
+        readonly property real _travel: Math.max(0, width - _inset * 2)
+        readonly property real _backendPos: _inset + _travel * clampedVal
+        property real _dragPos: _inset
+        property bool _isDraggingTrack: false
+
+        property real _pos: _isDraggingTrack ? _dragPos : _backendPos
+
+        Behavior on _pos {
+            enabled: !hSliderRoot._isDraggingTrack
+            NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
         }
 
-        // Background container pill (tactile recessed track)
-        Rectangle {
-            id: vTrack
-            anchors.fill: parent
-            radius: 14
-            color: vSliderRoot.inactiveColor
+        // 1. FILLED TRACK (Left section with rounded outer corners and square inner corners facing thumb)
+        Item {
+            id: hActive
+            anchors.verticalCenter: parent.verticalCenter
+            x: 0
+            width: Math.max(0, hSliderRoot._pos - hSliderRoot._hw / 2 - hSliderRoot.handleGap)
+            height: hSliderRoot.trackHeight
             clip: true
+            visible: width > 0
 
-            // Smooth rounded fluid level capsule (raised tactile pill)
             Rectangle {
-                id: fillPill
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: Math.round(parent.height * vSliderRoot.clampedVal)
-                radius: 14
-                color: vSliderRoot.activeColor
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.tint(vSliderRoot.activeColor, Qt.rgba(1, 1, 1, 0.06)) }
-                    GradientStop { position: 1.0; color: Qt.darker(vSliderRoot.activeColor, 1.04) }
-                }
-
-                Behavior on height {
-                    enabled: !vSliderMouse.pressed
-                    NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
-                }
+                width: parent.width + hSliderRoot._outer
+                height: parent.height
+                x: 0
+                radius: hSliderRoot._outer
+                color: hSliderRoot.activeColor
             }
+        }
 
-            // Top readout: percentage or Muted
+        // 2. THIN VERTICAL HANDLE (Divider at boundary, #d9d9d9)
+        Rectangle {
+            id: sliderHandle
+            anchors.verticalCenter: parent.verticalCenter
+            x: Math.round(hSliderRoot._pos - hSliderRoot._hw / 2)
+            width: hSliderRoot._hw
+            height: Math.min(hSliderRoot.handleHeight, parent.height)
+            radius: width / 2
+            color: "#d9d9d9"
+            z: 5
+        }
+
+        // 3. UNFILLED TRACK (Right section with square inner corners facing thumb and rounded outer corners)
+        Item {
+            id: hInactive
+            anchors.verticalCenter: parent.verticalCenter
+            x: Math.round(hSliderRoot._pos + hSliderRoot._hw / 2 + hSliderRoot.handleGap)
+            width: Math.max(0, parent.width - x)
+            height: hSliderRoot.trackHeight
+            clip: true
+            visible: width > 0
+
+            Rectangle {
+                width: parent.width + hSliderRoot._outer
+                height: parent.height
+                x: -hSliderRoot._outer
+                radius: hSliderRoot._outer
+                color: hSliderRoot.inactiveColor
+            }
+        }
+
+        // Slider Icon (Volume / Brightness)
+        Item {
+            anchors.left: parent.left
+            anchors.leftMargin: 9
+            anchors.verticalCenter: parent.verticalCenter
+            width: 20
+            height: 20
+            z: 10
+
             Text {
-                anchors.top: parent.top
-                anchors.topMargin: 12
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: vSliderRoot.isMuted ? "Mute" : Math.round(vSliderRoot.clampedVal * 100) + "%"
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                font.weight: Font.DemiBold
-                color: (vSliderRoot.clampedVal >= 0.85 && !vSliderRoot.isMuted) ? Theme.textOnPrimary : Theme.textPrimary
-                z: 10
-
+                anchors.centerIn: parent
+                text: (hSliderRoot.isMuted && hSliderRoot.mutedIcon.length > 0) ? hSliderRoot.mutedIcon : hSliderRoot.icon
+                font.family: hSliderRoot.symbolFont
+                font.pixelSize: 15
+                color: (hSliderRoot.clampedVal >= 0.15 && !hSliderRoot.isMuted) ? Theme.textOnPrimary : (hSliderRoot.isMuted ? Theme.error : Theme.textPrimary)
                 Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
             }
-
-            // Bottom icon: volume / brightness
-            Item {
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 10
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 28
-                height: 28
-                z: 10
-
-                Text {
-                    anchors.centerIn: parent
-                    text: (vSliderRoot.isMuted && vSliderRoot.mutedIcon.length > 0) ? vSliderRoot.mutedIcon : vSliderRoot.icon
-                    font.family: vSliderRoot.symbolFont
-                    font.pixelSize: 20
-                    color: (vSliderRoot.clampedVal >= 0.25 && !vSliderRoot.isMuted)
-                        ? Theme.textOnPrimary
-                        : (vSliderRoot.isMuted ? Theme.error : Theme.textPrimary)
-
-                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                }
-            }
         }
 
-        // Mouse handling for drag, click and wheel
+        // Slider Percentage Label
+        Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            text: hSliderRoot.isMuted ? "Mute" : Math.round(hSliderRoot.clampedVal * 100) + "%"
+            font.family: Theme.fontFamily
+            font.pixelSize: 10
+            font.weight: Font.DemiBold
+            color: (hSliderRoot.clampedVal >= 0.88 && !hSliderRoot.isMuted) ? Theme.textOnPrimary : Theme.textPrimary
+            z: 10
+            Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+        }
+
         MouseArea {
-            id: vSliderMouse
+            id: hSliderMouse
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
 
-            function updateVal(mouseY) {
-                let fraction = 1.0 - (mouseY / height);
-                let clamped = Math.max(0.0, Math.min(1.0, fraction));
-                vSliderRoot.moved(clamped);
+            function applyAt(mouseX) {
+                let p = (mouseX - hSliderRoot._inset) / Math.max(1, hSliderRoot._travel);
+                p = Math.max(0.0, Math.min(1.0, p));
+                hSliderRoot._dragPos = hSliderRoot._inset + hSliderRoot._travel * p;
+                hSliderRoot.moved(p);
             }
 
             onPressed: mouse => {
-                if (mouse.y > height - 42) {
-                    vSliderRoot.iconClicked();
+                if (mouse.x < 32) {
+                    hSliderRoot.iconClicked();
                 } else {
-                    updateVal(mouse.y);
+                    hSliderRoot._isDraggingTrack = true;
+                    applyAt(mouse.x);
                 }
             }
-            onPositionChanged: mouse => {
-                if (pressed) updateVal(mouse.y);
+
+            onReleased: {
+                hSliderRoot._isDraggingTrack = false;
             }
+
+            onCanceled: {
+                hSliderRoot._isDraggingTrack = false;
+            }
+
+            onPositionChanged: mouse => {
+                if (hSliderRoot._isDraggingTrack) applyAt(mouse.x);
+            }
+
             onWheel: wheel => {
                 let delta = wheel.angleDelta.y > 0 ? 0.05 : -0.05;
-                let newVal = Math.max(0.0, Math.min(1.0, vSliderRoot.value + delta));
-                vSliderRoot.moved(newVal);
+                let newVal = Math.max(0.0, Math.min(1.0, hSliderRoot.clampedVal + delta));
+                hSliderRoot.moved(newVal);
             }
         }
     }
 
-
-
-    // ────────────────────────────────────────────────────────────
-    // Material 3 Expressive Layout
-    // ────────────────────────────────────────────────────────────
-    Column {
+    // Main Control Center Layout (Compact 600 x 240 px)
+    Item {
         id: mainLayout
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.leftMargin: 12
-        anchors.rightMargin: 12
-        anchors.topMargin: 12
-        spacing: 10
+        anchors.fill: parent
+        anchors.margins: 8
+        implicitHeight: 224
 
         opacity: root.currentView === "main" ? 1.0 : 0.0
         scale: root.currentView === "main" ? 1.0 : 0.96
@@ -484,1422 +386,1112 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
         Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
-        // ════════════════════════════════════════════════════════════
-        // 1. M3 Telemetry Card (Profile, Battery, Network IP & Action Strip)
-        // ════════════════════════════════════════════════════════════
-        Item {
-            width: parent.width
-            height: teleCol.implicitHeight + 20
+        Column {
+            anchors.fill: parent
+            spacing: 6
 
-            // Ambient drop shadow beneath card
-            Rectangle {
-                anchors.fill: parent
-                anchors.topMargin: 1
-                anchors.bottomMargin: -1
-                radius: 16
-                color: Qt.rgba(0, 0, 0, 0.18)
-                z: -1
-            }
+            // TOP ROW: System Info (1), Weather (2), Power (3)
+            Row {
+                width: parent.width
+                height: 48
+                spacing: 6
 
-            Rectangle {
-                id: telemetryCard
-                anchors.fill: parent
-                radius: 16
-                color: Theme.surfaceContainer
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
-                    GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
-                }
+                // 1. System Info (Top-Left, 342px)
+                Item {
+                    width: 342
+                    height: parent.height
 
-                Column {
-                    id: teleCol
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 10
-                    spacing: 10
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.topMargin: 1; anchors.bottomMargin: -1
+                        radius: 12; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                    }
 
-                    // ── Profile, System Telemetry & Network Row ──
-                    Item {
-                        width: parent.width
-                        height: 56
+                    Rectangle {
+                        id: sysInfoCard
+                        anchors.fill: parent
+                        radius: 12
+                        color: Theme.surfaceContainer
+                        gradient: (Colors.activeTheme === "espresso") ? null : sysGrad
+                        Gradient {
+                            id: sysGrad
+                            GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
+                            GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
+                        }
 
-                        // Profile Avatar + System Column (Username, Uptime, IP/WiFi)
                         Row {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 10
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 8
 
-                            // Profile Avatar Squircle
                             Rectangle {
-                                width: 42
-                                height: 42
-                                radius: 12
+                                width: 32
+                                height: 32
+                                radius: 8
                                 color: Theme.surfaceVariant
-                                gradient: Gradient {
+                                gradient: (Colors.activeTheme === "espresso") ? null : avatarGrad
+                                Gradient {
+                                    id: avatarGrad
                                     GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceVariant, Qt.rgba(1, 1, 1, 0.04)) }
                                     GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceVariant, 1.03) }
                                 }
                                 clip: true
                                 anchors.verticalCenter: parent.verticalCenter
 
-                            Image {
-                                anchors.fill: parent
-                                source: C.SystemInfo.profilePicture
-                                fillMode: Image.PreserveAspectCrop
-                                visible: status === Image.Ready
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: (C.SystemInfo.username ? C.SystemInfo.username.charAt(0).toUpperCase() : "U")
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 18
-                                font.weight: Font.DemiBold
-                                color: Theme.textPrimary
-                                visible: !C.SystemInfo.profilePicture || C.SystemInfo.profilePicture == ""
-                            }
-                        }
-
-                        // Username, Uptime & WiFi/IP in ONE Unified Column
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-
-                            // Line 1: Username & Hostname
-                            Row {
-                                spacing: 5
-                                Text {
-                                    text: C.SystemInfo.username || "user"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
-                                    color: Theme.textPrimary
+                                Image {
+                                    anchors.fill: parent
+                                    source: C.SystemInfo.profilePicture
+                                    fillMode: Image.PreserveAspectCrop
+                                    visible: status === Image.Ready
                                 }
-                                Text {
-                                    text: "(" + (C.SystemInfo.hostname || "mango") + ")"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 11
-                                    font.weight: Font.Normal
-                                    color: Theme.textMuted
-                                    anchors.baseline: parent.children[0].baseline
-                                }
-                            }
-
-                            // Line 2: Uptime
-                            Text {
-                                text: C.SystemInfo.uptimeLongText || "up just now"
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 10
-                                color: Theme.textMuted
-                            }
-
-                            // Line 3: IP & WiFi
-                            Row {
-                                spacing: 5
-                                visible: root.netIp !== "" || root.netIfaceLabel !== ""
-
-                                Text {
-                                    text: root.netIp
-                                    font.family: "MesloLGS Nerd Font", "Noto Sans Mono", Theme.fontFamily
-                                    font.pixelSize: 10
-                                    color: Theme.textMuted
-                                }
-
-                                Text {
-                                    text: "·"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 10
-                                    color: Theme.textDim
-                                    visible: root.netIp !== "" && root.netIfaceLabel !== ""
-                                }
-
-                                Text {
-                                    text: root.netIfaceLabel
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 10
-                                    color: Theme.textMuted
-                                }
-                            }
-                        }
-                    }
-
-                    // Battery & Bandwidth Stats (Right)
-                    Column {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 3
-
-                        // Battery Chip Pill
-                        Rectangle {
-                            id: batChip
-                            anchors.right: parent.right
-                            height: 20
-                            width: batRow.implicitWidth + 12
-                            radius: 10
-                            color: C.Battery.percentage <= 20
-                                ? Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, 0.16)
-                                : Qt.rgba(105/255, 219/255, 124/255, 0.14)
-
-                            Row {
-                                id: batRow
-                                anchors.centerIn: parent
-                                spacing: 4
-
-                                Text {
-                                    text: C.Battery.isCharging ? "" : (C.Battery.percentage > 20 ? "" : "")
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 13
-                                    color: C.Battery.percentage <= 20 ? Theme.error : "#69db7c"
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                Text {
-                                    text: C.Battery.percentage + "%"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
-                                    color: C.Battery.percentage <= 20 ? Theme.error : "#69db7c"
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-                        }
-
-                        // Download Speed (RX)
-                        Row {
-                            anchors.right: parent.right
-                            spacing: 4
-
-                            Text {
-                                text: "↓"
-                                font.family: "MesloLGS Nerd Font", "Noto Sans Mono"
-                                font.pixelSize: 10
-                                color: Theme.secondary
-                            }
-                            Text {
-                                text: root.netRxFormatted
-                                font.family: "MesloLGS Nerd Font", "Noto Sans Mono"
-                                font.pixelSize: 10
-                                font.weight: Font.DemiBold
-                                color: Theme.textPrimary
-                            }
-                        }
-
-                        // Upload Speed (TX) below Download
-                        Row {
-                            anchors.right: parent.right
-                            spacing: 4
-
-                            Text {
-                                text: "↑"
-                                font.family: "MesloLGS Nerd Font", "Noto Sans Mono"
-                                font.pixelSize: 10
-                                color: Theme.tertiary
-                            }
-                            Text {
-                                text: root.netTxFormatted
-                                font.family: "MesloLGS Nerd Font", "Noto Sans Mono"
-                                font.pixelSize: 10
-                                font.weight: Font.DemiBold
-                                color: Theme.textPrimary
-                            }
-                        }
-                    }
-                }
-
-                // ── ROW 2: Bottom Action Strip ──
-                Rectangle {
-                    id: actionStrip
-                    width: parent.width
-                    height: 36
-                    radius: 12
-                    color: Qt.rgba(0, 0, 0, 0.20)
-
-                    Item {
-                        anchors.fill: parent
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
-
-                        // Right Quick Action (Power Button)
-                        Rectangle {
-                            id: powerBtn
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 28
-                            height: 28
-                            radius: 8
-                            color: (root.powerMenuHovered || powerBtnMouse.containsMouse)
-                                ? Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, 0.16)
-                                : Qt.rgba(1, 1, 1, 0.08)
-                            scale: powerBtnMouse.pressed ? 0.90 : (powerBtnMouse.containsMouse ? 1.08 : 1.0)
-                            opacity: powerBtnMouse.containsMouse ? 1.0 : 0.85
-                            Behavior on scale { NumberAnimation { duration: 80 } }
-                            Behavior on opacity { NumberAnimation { duration: 80 } }
-                            Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\ue8ac" // power_settings_new
-                                font.family: matSymbols.name
-                                font.pixelSize: 14
-                                color: (root.powerMenuHovered || powerBtnMouse.containsMouse) ? Theme.error : Theme.textPrimary
-                            }
-                            MouseArea {
-                                id: powerBtnMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onEntered: {
-                                    powerCloseTimer.stop();
-                                    root.powerMenuHovered = true;
-                                }
-                                onExited: {
-                                    powerCloseTimer.restart();
-                                }
-                                onClicked: {
-                                    root.powerMenuHovered = !root.powerMenuHovered;
-                                }
-                            }
-                        }
-
-                        // ── DEFAULT STATE: Date-Time & Weather (Centered & Symmetrical) ──
-                        Item {
-                            id: defaultInfoArea
-                            anchors.left: parent.left
-                            anchors.right: powerBtn.left
-                            anchors.rightMargin: 6
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            opacity: !root.powerMenuHovered ? 1.0 : 0.0
-                            scale: !root.powerMenuHovered ? 1.0 : 0.96
-                            visible: opacity > 0.01
-
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                height: parent.height
-
-                                Text {
-                                    text: root.getAmbientMoodIcon(root.currentTime)
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 14
-                                    color: root.getAmbientMoodIconColor(root.currentTime)
-                                    height: parent.height
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-
-                                Text {
-                                    text: root.formatAestheticDate(root.currentTime)
-                                    textFormat: Text.StyledText
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 11
-                                    font.weight: Font.Medium
-                                    color: Theme.textPrimary
-                                    height: parent.height
-                                    verticalAlignment: Text.AlignVCenter
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
-
-                        // ── POWER HOVER STATE: Sleep | Logout | Restart | Shutdown ──
-                        Item {
-                            id: powerOptionsArea
-                            anchors.left: parent.left
-                            anchors.leftMargin: 4
-                            anchors.right: powerBtn.left
-                            anchors.rightMargin: 6
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            opacity: root.powerMenuHovered ? 1.0 : 0.0
-                            scale: root.powerMenuHovered ? 1.0 : 0.96
-                            visible: opacity > 0.01
-
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 5
-
-                                // Sleep
-                                Rectangle {
-                                    height: 26
-                                    width: sleepRow.implicitWidth + 14
-                                    radius: 8
-                                    color: sleepMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                                    scale: sleepMouse.pressed ? 0.92 : (sleepMouse.containsMouse ? 1.05 : 1.0)
-                                    opacity: sleepMouse.containsMouse ? 1.0 : 0.85
-                                    Behavior on scale { NumberAnimation { duration: 80 } }
-                                    Behavior on opacity { NumberAnimation { duration: 80 } }
-                                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-
-                                    Row {
-                                        id: sleepRow
-                                        anchors.centerIn: parent
-                                        spacing: 4
-
-                                        Text {
-                                            text: "\ue51c" // dark_mode / moon
-                                            font.family: matSymbols.name
-                                            font.pixelSize: 13
-                                            color: Theme.secondary
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                        Text {
-                                            text: "Sleep"
-                                            font.family: Theme.fontFamily
-                                            font.pixelSize: 11
-                                            font.weight: Font.DemiBold
-                                            color: Theme.secondary
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        id: sleepMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onEntered: { powerCloseTimer.stop(); root.powerMenuHovered = true; }
-                                        onExited: { powerCloseTimer.restart(); }
-                                        onClicked: {
-                                            ControlCenterService.close();
-                                            Quickshell.execDetached(["systemctl", "suspend"]);
-                                        }
-                                    }
-                                }
-
-                                // Logout
-                                Rectangle {
-                                    height: 26
-                                    width: logoutRow.implicitWidth + 14
-                                    radius: 8
-                                    color: logoutMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                                    scale: logoutMouse.pressed ? 0.92 : (logoutMouse.containsMouse ? 1.05 : 1.0)
-                                    opacity: logoutMouse.containsMouse ? 1.0 : 0.85
-                                    Behavior on scale { NumberAnimation { duration: 80 } }
-                                    Behavior on opacity { NumberAnimation { duration: 80 } }
-                                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-
-                                    Row {
-                                        id: logoutRow
-                                        anchors.centerIn: parent
-                                        spacing: 4
-
-                                        Text {
-                                            text: "\ue9ba" // logout
-                                            font.family: matSymbols.name
-                                            font.pixelSize: 13
-                                            color: Theme.primary
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                        Text {
-                                            text: "Logout"
-                                            font.family: Theme.fontFamily
-                                            font.pixelSize: 11
-                                            font.weight: Font.DemiBold
-                                            color: Theme.primary
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        id: logoutMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onEntered: { powerCloseTimer.stop(); root.powerMenuHovered = true; }
-                                        onExited: { powerCloseTimer.restart(); }
-                                        onClicked: {
-                                            ControlCenterService.close();
-                                            Quickshell.execDetached(["bash", "-c", "loginctl terminate-user $USER || pkill -TERM mango"]);
-                                        }
-                                    }
-                                }
-
-                                // Restart
-                                Rectangle {
-                                    height: 26
-                                    width: restartRow.implicitWidth + 14
-                                    radius: 8
-                                    color: restartMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                                    scale: restartMouse.pressed ? 0.92 : (restartMouse.containsMouse ? 1.05 : 1.0)
-                                    opacity: restartMouse.containsMouse ? 1.0 : 0.85
-                                    Behavior on scale { NumberAnimation { duration: 80 } }
-                                    Behavior on opacity { NumberAnimation { duration: 80 } }
-                                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-
-                                    Row {
-                                        id: restartRow
-                                        anchors.centerIn: parent
-                                        spacing: 4
-
-                                        Text {
-                                            text: "\uf053" // restart_alt
-                                            font.family: matSymbols.name
-                                            font.pixelSize: 13
-                                            color: Theme.tertiary
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                        Text {
-                                            text: "Restart"
-                                            font.family: Theme.fontFamily
-                                            font.pixelSize: 11
-                                            font.weight: Font.DemiBold
-                                            color: Theme.tertiary
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        id: restartMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onEntered: { powerCloseTimer.stop(); root.powerMenuHovered = true; }
-                                        onExited: { powerCloseTimer.restart(); }
-                                        onClicked: {
-                                            ControlCenterService.close();
-                                            Quickshell.execDetached(["systemctl", "reboot"]);
-                                        }
-                                    }
-                                }
-
-                                // Shutdown
-                                Rectangle {
-                                    height: 26
-                                    width: shutdownRow.implicitWidth + 14
-                                    radius: 8
-                                    color: shutdownMouse.containsMouse
-                                        ? Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, 0.16)
-                                        : "transparent"
-                                    scale: shutdownMouse.pressed ? 0.92 : (shutdownMouse.containsMouse ? 1.05 : 1.0)
-                                    opacity: shutdownMouse.containsMouse ? 1.0 : 0.85
-                                    Behavior on scale { NumberAnimation { duration: 80 } }
-                                    Behavior on opacity { NumberAnimation { duration: 80 } }
-                                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-
-                                    Row {
-                                        id: shutdownRow
-                                        anchors.centerIn: parent
-                                        spacing: 4
-
-                                        Text {
-                                            text: "\ue8ac" // power_settings_new
-                                            font.family: matSymbols.name
-                                            font.pixelSize: 13
-                                            color: Theme.error
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                        Text {
-                                            text: "Shutdown"
-                                            font.family: Theme.fontFamily
-                                            font.pixelSize: 11
-                                            font.weight: Font.DemiBold
-                                            color: Theme.error
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        id: shutdownMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onEntered: { powerCloseTimer.stop(); root.powerMenuHovered = true; }
-                                        onExited: { powerCloseTimer.restart(); }
-                                        onClicked: {
-                                            ControlCenterService.close();
-                                            Quickshell.execDetached(["systemctl", "poweroff"]);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-        // ════════════════════════════════════════════════════════════
-        // 2. M3 Expressive Controls: Quick Settings + Sliders (Side-by-Side)
-        // ════════════════════════════════════════════════════════════
-        Row {
-            width: parent.width
-            height: 130
-            spacing: 10
-
-            // ── Left: Quick Settings 2x2 Grid ──
-            Grid {
-                columns: 2
-                spacing: 10
-                width: 260
-
-                // Tile 1: Wi-Fi / Internet
-                Item {
-                    width: (parent.width - 8) / 2
-                    height: 60
-
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.topMargin: 1
-                        anchors.bottomMargin: -1
-                        radius: 14
-                        color: Qt.rgba(0, 0, 0, 0.18)
-                        z: -1
-                    }
-
-                    Rectangle {
-                        id: wifiTile
-                        anchors.fill: parent
-                        radius: 14
-                        color: root.wifiEnabled ? Theme.activeTileBg : (wifiMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
-                        scale: wifiMouse.pressed ? 0.95 : (wifiMouse.containsMouse ? 1.02 : 1.0)
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Qt.tint(wifiTile.color, Qt.rgba(1, 1, 1, root.wifiEnabled ? 0.06 : 0.03)) }
-                            GradientStop { position: 1.0; color: Qt.darker(wifiTile.color, 1.04) }
-                        }
-
-                        Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                        Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 8
-                            spacing: 8
-
-                            Rectangle {
-                                id: wifiIconCircle
-                                width: 32
-                                height: 32
-                                radius: 16
-                                color: root.wifiEnabled
-                                    ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18)
-                                    : Qt.rgba(1, 1, 1, 0.06)
-                                anchors.verticalCenter: parent.verticalCenter
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: root.wifiEnabled ? "\ue63e" : "\ue648"
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 18
-                                    color: root.wifiEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.toggleWifi()
+                                    text: (C.SystemInfo.username ? C.SystemInfo.username.charAt(0).toUpperCase() : "U")
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 14
+                                    font.weight: Font.DemiBold
+                                    color: Theme.textPrimary
+                                    visible: !C.SystemInfo.profilePicture || C.SystemInfo.profilePicture == ""
                                 }
                             }
 
                             Column {
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: 1
-                                width: parent.width - 32 - 8 - 18
+                                width: 175
 
-                                Text {
-                                    text: "Internet"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    color: root.wifiEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                Row {
+                                    spacing: 4
+                                    Text {
+                                        text: C.SystemInfo.username || "user"
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 11
+                                        font.weight: Font.DemiBold
+                                        color: Theme.textPrimary
+                                    }
+                                    Text {
+                                        text: "(" + (C.SystemInfo.hostname || "mango") + ")"
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 10
+                                        font.weight: Font.Normal
+                                        color: Theme.textMuted
+                                        anchors.baseline: parent.children[0].baseline
+                                    }
                                 }
 
                                 Text {
-                                    text: root.wifiEnabled ? (root.wifiSsid ? root.wifiSsid : "Connected") : "Off"
+                                    text: C.SystemInfo.uptimeLongText || "up just now"
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 10
-                                    font.weight: Font.Normal
-                                    color: root.wifiEnabled
-                                        ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78)
-                                        : Theme.textMuted
+                                    font.pixelSize: 8
+                                    color: Theme.textMuted
+                                }
+
+                                Row {
+                                    spacing: 3
+                                    visible: root.netIp !== "" || root.netIfaceLabel !== ""
+
+                                    Text {
+                                        text: root.netIp
+                                        font.family: "MesloLGS Nerd Font", "Noto Sans Mono", Theme.fontFamily
+                                        font.pixelSize: 8
+                                        color: Theme.textMuted
+                                    }
+                                    Text {
+                                        text: "·"
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 8
+                                        color: Theme.textDim
+                                        visible: root.netIp !== "" && root.netIfaceLabel !== ""
+                                    }
+                                    Text {
+                                        text: root.wifiSsid ? root.wifiSsid : root.netIfaceLabel
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 8
+                                        color: Theme.textMuted
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
+
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 2
+                                width: parent.width - 32 - 175 - 16
+
+                                Rectangle {
+                                    id: batPill
+                                    anchors.right: parent.right
+                                    height: 16
+                                    width: batRow.implicitWidth + 8
+                                    radius: 8
+                                    readonly property color batColor: (Colors.activeTheme === "espresso")
+                                        ? Theme.green
+                                        : (C.Battery.percentage <= 20 ? Theme.error : (C.Battery.isCharging ? Theme.yellow : Theme.green))
+                                    color: Qt.rgba(batColor.r, batColor.g, batColor.b, 0.16)
+
+                                    Row {
+                                        id: batRow
+                                        anchors.centerIn: parent
+                                        spacing: 3
+
+                                        Text {
+                                            text: C.Battery.isCharging ? "\ue3e7" : (C.Battery.percentage > 20 ? "\ue1a4" : "\ue19c")
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 10
+                                            color: batPill.batColor
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+
+                                        Text {
+                                            text: C.Battery.percentage + "%"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 9
+                                            font.weight: Font.DemiBold
+                                            color: batPill.batColor
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+                                }
+
+                                Row {
+                                    anchors.right: parent.right
+                                    spacing: 3
+                                    Text { text: "↓"; font.pixelSize: 8; color: Theme.secondary; font.family: "MesloLGS Nerd Font" }
+                                    Text { text: root.netRxFormatted; font.pixelSize: 8; font.weight: Font.DemiBold; color: Theme.textPrimary; font.family: "MesloLGS Nerd Font" }
+                                    Text { text: "↑"; font.pixelSize: 8; color: Theme.tertiary; font.family: "MesloLGS Nerd Font" }
+                                    Text { text: root.netTxFormatted; font.pixelSize: 8; font.weight: Font.DemiBold; color: Theme.textPrimary; font.family: "MesloLGS Nerd Font" }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 2. Weather (Top-Middle, 194px)
+                Item {
+                    width: 194
+                    height: parent.height
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.topMargin: 1; anchors.bottomMargin: -1
+                        radius: 12; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                    }
+
+                    Rectangle {
+                        id: weatherCard
+                        anchors.fill: parent
+                        radius: 12
+                        color: Theme.surfaceContainer
+                        gradient: (Colors.activeTheme === "espresso") ? null : weatherGrad
+                        Gradient {
+                            id: weatherGrad
+                            GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
+                            GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
+                        }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 8
+
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 8
+                                color: Qt.rgba(1, 1, 1, 0.04)
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.getAmbientMoodIcon(root.currentTime)
+                                    font.family: matSymbols.name
+                                    font.pixelSize: 18
+                                    color: root.getAmbientMoodIconColor(root.currentTime)
+                                }
+                            }
+
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 1
+                                width: parent.width - 40
+
+                                Text {
+                                    text: Math.round(WeatherService.temp) + "°C · " + (WeatherService.conditionText || "Clear")
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    color: Theme.textPrimary
+                                    elide: Text.ElideRight
+                                    width: parent.width
+                                }
+
+                                Text {
+                                    text: root.currentTime.toLocaleDateString(Qt.locale(), "ddd, d MMM")
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 9
+                                    color: Theme.textMuted
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                             }
+                        }
+                    }
+                }
 
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "\ue5cc" // chevron_right
-                                font.family: matSymbols.name
-                                font.pixelSize: 16
-                                color: root.wifiEnabled
-                                    ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.6)
-                                    : Theme.textDim
-                            }
+                // 3. Power (Top-Right, 38px)
+                Item {
+                    width: parent.width - 342 - 194 - 12
+                    height: parent.height
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.topMargin: 1; anchors.bottomMargin: -1
+                        radius: 12; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                    }
+
+                    Rectangle {
+                        id: powerCard
+                        anchors.fill: parent
+                        radius: 12
+                        color: powerMouse.containsMouse
+                            ? Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, 0.20)
+                            : Theme.surfaceContainer
+                        scale: powerMouse.pressed ? 0.92 : (powerMouse.containsMouse ? 1.04 : 1.0)
+
+                        Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                        Behavior on scale { NumberAnimation { duration: 80 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\ue8ac"
+                            font.family: matSymbols.name
+                            font.pixelSize: 18
+                            color: Theme.error
                         }
 
                         MouseArea {
-                            id: wifiMouse
+                            id: powerMouse
                             anchors.fill: parent
-                            anchors.leftMargin: 36
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                if (!root.wifiEnabled) {
-                                    root.toggleWifi();
-                                }
-                                root.currentView = "wifi";
-                                WifiService.isOpen = true;
-                                C.Network.refreshAll();
-                                C.Network.rescan();
+                                ControlCenterService.close();
+                                Quickshell.execDetached(["systemctl", "poweroff"]);
                             }
-                        }
-                    }
-                }
-
-                // Tile 2: Bluetooth
-                Item {
-                    width: (parent.width - 8) / 2
-                    height: 60
-
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.topMargin: 1
-                        anchors.bottomMargin: -1
-                        radius: 14
-                        color: Qt.rgba(0, 0, 0, 0.18)
-                        z: -1
-                    }
-
-                    Rectangle {
-                        id: btTile
-                        anchors.fill: parent
-                        radius: 14
-                        color: root.bluetoothEnabled ? Theme.activeTileBg : (btMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
-                        scale: btMouse.pressed ? 0.95 : (btMouse.containsMouse ? 1.02 : 1.0)
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Qt.tint(btTile.color, Qt.rgba(1, 1, 1, root.bluetoothEnabled ? 0.06 : 0.03)) }
-                            GradientStop { position: 1.0; color: Qt.darker(btTile.color, 1.04) }
-                        }
-
-                        Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                        Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 8
-                            spacing: 8
-
-                            Rectangle {
-                                id: btIconCircle
-                                width: 32
-                                height: 32
-                                radius: 16
-                                color: root.bluetoothEnabled
-                                    ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18)
-                                    : Qt.rgba(1, 1, 1, 0.06)
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.bluetoothEnabled ? "" : ""
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 18
-                                    color: root.bluetoothEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                                }
-                            }
-
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 1
-                                width: parent.width - 40
-
-                                Text {
-                                    text: "Bluetooth"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    color: root.bluetoothEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                                }
-
-                                Text {
-                                    text: root.bluetoothEnabled ? "Active" : "Off"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 10
-                                    font.weight: Font.Normal
-                                    color: root.bluetoothEnabled
-                                        ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78)
-                                        : Theme.textMuted
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            id: btMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.toggleBluetooth()
-                        }
-                    }
-                }
-
-                // Tile 3: Do Not Disturb
-                Item {
-                    width: (parent.width - 8) / 2
-                    height: 60
-
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.topMargin: 1
-                        anchors.bottomMargin: -1
-                        radius: 14
-                        color: Qt.rgba(0, 0, 0, 0.18)
-                        z: -1
-                    }
-
-                    Rectangle {
-                        id: dndTile
-                        anchors.fill: parent
-                        radius: 14
-                        color: ControlCenterService.dndEnabled ? Theme.activeTileBg : (dndMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
-                        scale: dndMouse.pressed ? 0.95 : (dndMouse.containsMouse ? 1.02 : 1.0)
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Qt.tint(dndTile.color, Qt.rgba(1, 1, 1, ControlCenterService.dndEnabled ? 0.06 : 0.03)) }
-                            GradientStop { position: 1.0; color: Qt.darker(dndTile.color, 1.04) }
-                        }
-
-                        Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                        Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 8
-                            spacing: 8
-
-                            Rectangle {
-                                id: dndIconCircle
-                                width: 32
-                                height: 32
-                                radius: 16
-                                color: ControlCenterService.dndEnabled
-                                    ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18)
-                                    : Qt.rgba(1, 1, 1, 0.06)
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: ControlCenterService.dndEnabled ? "" : ""
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 18
-                                    color: ControlCenterService.dndEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                                }
-                            }
-
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 1
-                                width: parent.width - 40
-
-                                Text {
-                                    text: "Focus"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    color: ControlCenterService.dndEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                                }
-
-                                Text {
-                                    text: ControlCenterService.dndEnabled ? "On" : "Off"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 10
-                                    font.weight: Font.Normal
-                                    color: ControlCenterService.dndEnabled
-                                        ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78)
-                                        : Theme.textMuted
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            id: dndMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: ControlCenterService.toggleDnd()
-                        }
-                    }
-                }
-
-                // Tile 4: Night Light
-                Item {
-                    width: (parent.width - 8) / 2
-                    height: 60
-
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.topMargin: 1
-                        anchors.bottomMargin: -1
-                        radius: 14
-                        color: Qt.rgba(0, 0, 0, 0.18)
-                        z: -1
-                    }
-
-                    Rectangle {
-                        id: nightTile
-                        anchors.fill: parent
-                        radius: 14
-                        color: ControlCenterService.nightLightEnabled ? Theme.activeTileBg : (nightMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
-                        scale: nightMouse.pressed ? 0.95 : (nightMouse.containsMouse ? 1.02 : 1.0)
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: Qt.tint(nightTile.color, Qt.rgba(1, 1, 1, ControlCenterService.nightLightEnabled ? 0.06 : 0.03)) }
-                            GradientStop { position: 1.0; color: Qt.darker(nightTile.color, 1.04) }
-                        }
-
-                        Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                        Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 8
-                            spacing: 8
-
-                            Rectangle {
-                                id: nightIconCircle
-                                width: 32
-                                height: 32
-                                radius: 16
-                                color: ControlCenterService.nightLightEnabled
-                                    ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18)
-                                    : Qt.rgba(1, 1, 1, 0.06)
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "\uf03d" // nightlight (crescent moon)
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 18
-                                    color: ControlCenterService.nightLightEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                                }
-                            }
-
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 1
-                                width: parent.width - 40
-
-                                Text {
-                                    text: "Night Light"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    color: ControlCenterService.nightLightEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                                }
-
-                                Text {
-                                    text: ControlCenterService.nightLightEnabled ? "On" : "Off"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 10
-                                    font.weight: Font.Normal
-                                    color: ControlCenterService.nightLightEnabled
-                                        ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78)
-                                        : Theme.textMuted
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            id: nightMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: ControlCenterService.toggleNightLight()
                         }
                     }
                 }
             }
 
-            // ── Right: Vertical Sliders (Left: Volume, Right: Brightness) ──
+            // MIDDLE SECTION: Controls (Left) + Calendar (Right)
             Row {
-                width: parent.width - 260 - 10
-                height: 130
-                spacing: 8
+                width: parent.width
+                height: 124
+                spacing: 6
 
-                // Volume M3 Vertical Slider (Left)
-                M3VerticalSlider {
-                    width: (parent.width - 8) / 2
-                    height: 130
-                    value: root.volLevel
-                    isMuted: root.volMuted
-                    icon: (root.volMuted || root.volLevel === 0) ? "" : (root.volLevel < 0.5 ? "" : "")
-                    mutedIcon: ""
-                    onMoved: val => root.setVolumeFraction(val)
-                    onIconClicked: root.toggleMute()
-                }
-
-                // Brightness M3 Vertical Slider (Right)
-                M3VerticalSlider {
-                    width: (parent.width - 8) / 2
-                    height: 130
-                    value: root.brightLevel
-                    icon: "" // light_mode
-                    onMoved: val => root.setBrightnessFraction(val)
-                    onIconClicked: {
-                        if (root.brightLevel > 0.5) root.setBrightnessFraction(0.25);
-                        else root.setBrightnessFraction(0.85);
-                    }
-                }
-            }
-        }
-
-        // ════════════════════════════════════════════════════════════
-        // 3. Charging Modes (Conserve 60% & Rapid Charge)
-        // ════════════════════════════════════════════════════════════
-        Row {
-            width: parent.width
-            spacing: 10
-
-            // Left: Conserve 60% Tile
-            Item {
-                width: (parent.width - 10) / 2
-                height: 52
-
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.topMargin: 1
-                    anchors.bottomMargin: -1
-                    radius: 14
-                    color: Qt.rgba(0, 0, 0, 0.18)
-                    z: -1
-                }
-
-                Rectangle {
-                    id: consTile
-                    anchors.fill: parent
-                    radius: 14
-                    color: IdeapadService.conservationEnabled ? Theme.activeTileBg : (consMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
-                    scale: consMouse.pressed ? 0.95 : (consMouse.containsMouse ? 1.02 : 1.0)
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.tint(consTile.color, Qt.rgba(1, 1, 1, IdeapadService.conservationEnabled ? 0.06 : 0.03)) }
-                        GradientStop { position: 1.0; color: Qt.darker(consTile.color, 1.04) }
-                    }
-
-                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                    Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 8
-                        spacing: 8
-
-                        Rectangle {
-                            id: consIconCircle
-                            width: 32
-                            height: 32
-                            radius: 16
-                            color: IdeapadService.conservationEnabled
-                                ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18)
-                                : Qt.rgba(1, 1, 1, 0.06)
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\uea35" // eco / leaf
-                                font.family: matSymbols.name
-                                font.pixelSize: 17
-                                color: IdeapadService.conservationEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                            }
-                        }
-
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 1
-                            width: parent.width - 40
-
-                            Text {
-                                text: "Conserve 60%"
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
-                                color: IdeapadService.conservationEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                            }
-
-                            Text {
-                                text: "Limit battery to 60%"
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 9
-                                font.weight: Font.Normal
-                                color: IdeapadService.conservationEnabled
-                                    ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78)
-                                    : Theme.textMuted
-                                elide: Text.ElideRight
-                                width: parent.width
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        id: consMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: IdeapadService.toggleConservation()
-                    }
-                }
-            }
-
-            // Right: Rapid Charge Tile
-            Item {
-                width: (parent.width - 10) / 2
-                height: 52
-
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.topMargin: 1
-                    anchors.bottomMargin: -1
-                    radius: 14
-                    color: Qt.rgba(0, 0, 0, 0.18)
-                    z: -1
-                }
-
-                Rectangle {
-                    id: rapidTile
-                    anchors.fill: parent
-                    radius: 14
-                    color: IdeapadService.rapidChargeEnabled ? Theme.activeTileBg : (rapidMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
-                    scale: rapidMouse.pressed ? 0.95 : (rapidMouse.containsMouse ? 1.02 : 1.0)
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.tint(rapidTile.color, Qt.rgba(1, 1, 1, IdeapadService.rapidChargeEnabled ? 0.06 : 0.03)) }
-                        GradientStop { position: 1.0; color: Qt.darker(rapidTile.color, 1.04) }
-                    }
-
-                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                    Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 8
-                        spacing: 8
-
-                        Rectangle {
-                            id: rapidIconCircle
-                            width: 32
-                            height: 32
-                            radius: 16
-                            color: IdeapadService.rapidChargeEnabled
-                                ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18)
-                                : Qt.rgba(1, 1, 1, 0.06)
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\uea0b" // bolt
-                                font.family: matSymbols.name
-                                font.pixelSize: 17
-                                color: IdeapadService.rapidChargeEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                            }
-                        }
-
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 1
-                            width: parent.width - 40
-
-                            Text {
-                                text: "Rapid Charge"
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
-                                color: IdeapadService.rapidChargeEnabled ? Theme.textOnPrimary : Theme.textPrimary
-                            }
-
-                            Text {
-                                text: "Fast charging mode"
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 9
-                                font.weight: Font.Normal
-                                color: IdeapadService.rapidChargeEnabled
-                                    ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78)
-                                    : Theme.textMuted
-                                elide: Text.ElideRight
-                                width: parent.width
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        id: rapidMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: IdeapadService.toggleRapidCharge()
-                    }
-                }
-            }
-        }
-
-        // ════════════════════════════════════════════════════════════
-        // 4. System Power Profiles (Segmented Control)
-        // ════════════════════════════════════════════════════════════
-        Rectangle {
-            id: profContainer
-            width: parent.width
-            height: 34
-            radius: 12
-            color: Qt.rgba(0, 0, 0, 0.22)
-
-            Row {
-                anchors.fill: parent
-                anchors.margins: 3
-                spacing: 3
-
-                Repeater {
-                    model: [
-                        { id: "performance", label: "Performance", icon: "\ue26b" },
-                        { id: "balanced", label: "Balanced", icon: "\uea35" },
-                        { id: "power-saver", label: "Saver", icon: "\ue9e0" }
-                    ]
-
-                    Item {
-                        id: profItem
-                        required property var modelData
-                        readonly property bool isSelected: C.Battery.activeProfile === modelData.id
-
-                        width: Math.floor((parent.width - 6) / 3)
-                        height: parent.height
-
-                        // Active button drop shadow
-                        Rectangle {
-                            anchors.fill: parent
-                            anchors.topMargin: 1
-                            anchors.bottomMargin: -1
-                            radius: 9
-                            visible: profItem.isSelected
-                            color: Qt.rgba(0, 0, 0, 0.20)
-                            z: -1
-                        }
-
-                        Rectangle {
-                            id: profBtn
-                            anchors.fill: parent
-                            radius: 9
-                            color: profItem.isSelected ? Theme.activeTileBg : (profMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent")
-                            scale: profMouse.pressed ? 0.96 : (profMouse.containsMouse ? 1.01 : 1.0)
-                            gradient: profItem.isSelected ? profGrad : null
-
-                            Gradient {
-                                id: profGrad
-                                GradientStop { position: 0.0; color: Qt.tint(Theme.activeTileBg, Qt.rgba(1, 1, 1, 0.06)) }
-                                GradientStop { position: 1.0; color: Qt.darker(Theme.activeTileBg, 1.04) }
-                            }
-
-                            Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                            Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 5
-
-                                Text {
-                                    text: profItem.modelData.icon
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 13
-                                    color: profItem.isSelected ? Theme.textOnPrimary : Theme.textPrimary
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                Text {
-                                    text: profItem.modelData.label
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 11
-                                    font.weight: profItem.isSelected ? Font.DemiBold : Font.Normal
-                                    color: profItem.isSelected ? Theme.textOnPrimary : Theme.textPrimary
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-
-                            MouseArea {
-                                id: profMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: C.Battery.setProfile(profItem.modelData.id)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ════════════════════════════════════════════════════════════
-        // 5. Keyboard RGB Lighting & Color Palette
-        // ════════════════════════════════════════════════════════════
-        Item {
-            width: parent.width
-            height: rgbCol.implicitHeight + 16
-
-            // Ambient drop shadow beneath RGB card
-            Rectangle {
-                anchors.fill: parent
-                anchors.topMargin: 1
-                anchors.bottomMargin: -1
-                radius: 16
-                color: Qt.rgba(0, 0, 0, 0.18)
-                z: -1
-            }
-
-            Rectangle {
-                id: rgbCard
-                anchors.fill: parent
-                radius: 16
-                color: Theme.surfaceContainer
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
-                    GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
-                }
-
+                // Left Controls Block (378px)
                 Column {
-                    id: rgbCol
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 8
-                    spacing: 8
+                    width: 378
+                    height: parent.height
+                    spacing: 6
 
-                    // Row 1: 5 Squircle Mode Buttons (Wave, Smooth, Breath, Static, Brightness)
+                    // Row 1: 4 Quick Toggles
                     Row {
                         width: parent.width
+                        height: 38
                         spacing: 6
 
-                        Repeater {
-                            model: [
-                                { id: "wave", name: "Wave", icon: "\ueb3e" },
-                                { id: "smooth", name: "Smooth", icon: "\ue3f3" },
-                                { id: "breath", name: "Breath", icon: "\uefd8" },
-                                { id: "static", name: "Static", icon: "\ue412" }
-                            ]
+                        // 4. Wi-Fi
+                        Item {
+                            width: (parent.width - 18) / 4
+                            height: parent.height
 
                             Rectangle {
-                                id: rgbModeBtn
-                                required property var modelData
-                                readonly property bool isActive: RgbService.power && RgbService.mode === modelData.id
-
-                                width: Math.floor((parent.width - 24) / 5)
-                                height: 44
+                                anchors.fill: parent
+                                anchors.topMargin: 1; anchors.bottomMargin: -1
+                                radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                            }
+                            Rectangle {
+                                id: wifiTile
+                                anchors.fill: parent
                                 radius: 10
-                                color: isActive ? Theme.activeTileBg : (rgbBtnMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
-                                scale: rgbBtnMouse.pressed ? 0.94 : (rgbBtnMouse.containsMouse ? 1.03 : 1.0)
-                                gradient: isActive ? rgbGrad : rgbSubtleGrad
+                                color: root.wifiEnabled ? Theme.wifiActive : (wifiMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
+                                scale: wifiMouse.pressed ? 0.95 : (wifiMouse.containsMouse ? 1.02 : 1.0)
+                                gradient: (Colors.activeTheme === "espresso") ? null : wifiGrad
 
                                 Gradient {
-                                    id: rgbGrad
-                                    GradientStop { position: 0.0; color: Qt.tint(Theme.activeTileBg, Qt.rgba(1, 1, 1, 0.06)) }
-                                    GradientStop { position: 1.0; color: Qt.darker(Theme.activeTileBg, 1.04) }
+                                    id: wifiGrad
+                                    GradientStop { position: 0.0; color: Qt.tint(wifiTile.color, Qt.rgba(1, 1, 1, root.wifiEnabled ? 0.06 : 0.03)) }
+                                    GradientStop { position: 1.0; color: Qt.darker(wifiTile.color, 1.04) }
                                 }
-
-                                Gradient {
-                                    id: rgbSubtleGrad
-                                    GradientStop { position: 0.0; color: Qt.tint(rgbModeBtn.color, Qt.rgba(1, 1, 1, 0.03)) }
-                                    GradientStop { position: 1.0; color: Qt.darker(rgbModeBtn.color, 1.03) }
-                                }
-
                                 Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                                Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 2
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 6; anchors.rightMargin: 5
+                                    spacing: 5
 
-                                    Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: rgbModeBtn.modelData.icon
-                                        font.family: matSymbols.name
-                                        font.pixelSize: 14
-                                        color: rgbModeBtn.isActive ? Theme.textOnPrimary : Theme.textPrimary
+                                    Rectangle {
+                                        width: 22; height: 22; radius: 11
+                                        color: root.wifiEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18) : Qt.rgba(1, 1, 1, 0.06)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: root.wifiEnabled ? "\ue63e" : "\ue648"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: root.wifiEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.toggleWifi()
+                                        }
                                     }
 
-                                    Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: rgbModeBtn.modelData.name
-                                        font.family: Theme.fontFamily
-                                        font.pixelSize: 9
-                                        font.weight: rgbModeBtn.isActive ? Font.DemiBold : Font.Normal
-                                        color: rgbModeBtn.isActive ? Theme.textOnPrimary : Theme.textMuted
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 1
+                                        width: parent.width - 27
+
+                                        Text {
+                                            text: "Wi-Fi"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            color: root.wifiEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                        Text {
+                                            text: root.wifiEnabled ? (root.wifiSsid ? root.wifiSsid : "On") : "Off"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 8
+                                            color: root.wifiEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78) : Theme.textMuted
+                                            elide: Text.ElideRight
+                                            width: parent.width
+                                        }
                                     }
                                 }
 
                                 MouseArea {
-                                    id: rgbBtnMouse
+                                    id: wifiMouse
                                     anchors.fill: parent
+                                    anchors.leftMargin: 28
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: RgbService.setMode(rgbModeBtn.modelData.id)
+                                    onClicked: {
+                                        if (!root.wifiEnabled) root.toggleWifi();
+                                        root.currentView = "wifi";
+                                        WifiService.isOpen = true;
+                                    }
                                 }
                             }
                         }
 
-                        // 5th Button: Keyboard Brightness Toggle (Low / High)
-                        Rectangle {
-                            id: kbdBBtn
-                            width: Math.floor((parent.width - 24) / 5)
-                            height: 44
-                            radius: 10
-                            color: kbdBMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-                            scale: kbdBMouse.pressed ? 0.94 : (kbdBMouse.containsMouse ? 1.03 : 1.0)
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: Qt.tint(kbdBBtn.color, Qt.rgba(1, 1, 1, 0.03)) }
-                                GradientStop { position: 1.0; color: Qt.darker(kbdBBtn.color, 1.03) }
-                            }
+                        // 5. Bluetooth
+                        Item {
+                            width: (parent.width - 18) / 4
+                            height: parent.height
 
-                            Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                            Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 2
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: "\ue1d8" // bar_chart / brightness
-                                    font.family: matSymbols.name
-                                    font.pixelSize: 14
-                                    color: Theme.textPrimary
-                                }
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: RgbService.brightness.toLowerCase()
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 9
-                                    font.weight: Font.Normal
-                                    color: Theme.textMuted
-                                }
-                            }
-
-                            MouseArea {
-                                id: kbdBMouse
+                            Rectangle {
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (RgbService.brightness === "high") RgbService.setBrightness("low");
-                                    else RgbService.setBrightness("high");
+                                anchors.topMargin: 1; anchors.bottomMargin: -1
+                                radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                            }
+                            Rectangle {
+                                id: btTile
+                                anchors.fill: parent
+                                radius: 10
+                                color: root.bluetoothEnabled ? Theme.bluetoothActive : (btMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
+                                scale: btMouse.pressed ? 0.95 : (btMouse.containsMouse ? 1.02 : 1.0)
+                                gradient: (Colors.activeTheme === "espresso") ? null : btGrad
+
+                                Gradient {
+                                    id: btGrad
+                                    GradientStop { position: 0.0; color: Qt.tint(btTile.color, Qt.rgba(1, 1, 1, root.bluetoothEnabled ? 0.06 : 0.03)) }
+                                    GradientStop { position: 1.0; color: Qt.darker(btTile.color, 1.04) }
+                                }
+                                Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 6; anchors.rightMargin: 5
+                                    spacing: 5
+
+                                    Rectangle {
+                                        width: 22; height: 22; radius: 11
+                                        color: root.bluetoothEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18) : Qt.rgba(1, 1, 1, 0.06)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: root.bluetoothEnabled ? "\ue1a7" : "\ue1a8"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: root.bluetoothEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 1
+                                        width: parent.width - 27
+
+                                        Text {
+                                            text: "Bluetooth"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            color: root.bluetoothEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                        Text {
+                                            text: root.bluetoothEnabled ? "Active" : "Off"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 8
+                                            color: root.bluetoothEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78) : Theme.textMuted
+                                            elide: Text.ElideRight
+                                            width: parent.width
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: btMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.toggleBluetooth()
+                                }
+                            }
+                        }
+
+                        // 6. Focus
+                        Item {
+                            width: (parent.width - 18) / 4
+                            height: parent.height
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 1; anchors.bottomMargin: -1
+                                radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                            }
+                            Rectangle {
+                                id: dndTile
+                                anchors.fill: parent
+                                radius: 10
+                                color: ControlCenterService.dndEnabled ? Theme.dndActive : (dndMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
+                                scale: dndMouse.pressed ? 0.95 : (dndMouse.containsMouse ? 1.02 : 1.0)
+                                gradient: (Colors.activeTheme === "espresso") ? null : dndGrad
+                                Gradient {
+                                    id: dndGrad
+                                    GradientStop { position: 0.0; color: Qt.tint(dndTile.color, Qt.rgba(1, 1, 1, ControlCenterService.dndEnabled ? 0.06 : 0.03)) }
+                                    GradientStop { position: 1.0; color: Qt.darker(dndTile.color, 1.04) }
+                                }
+                                Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 6; anchors.rightMargin: 5
+                                    spacing: 5
+
+                                    Rectangle {
+                                        width: 22; height: 22; radius: 11
+                                        color: ControlCenterService.dndEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18) : Qt.rgba(1, 1, 1, 0.06)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: ControlCenterService.dndEnabled ? "\ue7f6" : "\ue7f4"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: ControlCenterService.dndEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 1
+                                        width: parent.width - 27
+
+                                        Text {
+                                            text: "Focus"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            color: ControlCenterService.dndEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                        Text {
+                                            text: ControlCenterService.dndEnabled ? "On" : "Off"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 8
+                                            color: ControlCenterService.dndEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78) : Theme.textMuted
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: dndMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: ControlCenterService.toggleDnd()
+                                }
+                            }
+                        }
+
+                        // 7. Night Light
+                        Item {
+                            width: (parent.width - 18) / 4
+                            height: parent.height
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 1; anchors.bottomMargin: -1
+                                radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                            }
+                            Rectangle {
+                                id: nightTile
+                                anchors.fill: parent
+                                radius: 10
+                                color: ControlCenterService.nightLightEnabled ? Theme.nightLightActive : (nightMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
+                                scale: nightMouse.pressed ? 0.95 : (nightMouse.containsMouse ? 1.02 : 1.0)
+                                gradient: (Colors.activeTheme === "espresso") ? null : nightGrad
+                                Gradient {
+                                    id: nightGrad
+                                    GradientStop { position: 0.0; color: Qt.tint(nightTile.color, Qt.rgba(1, 1, 1, ControlCenterService.nightLightEnabled ? 0.06 : 0.03)) }
+                                    GradientStop { position: 1.0; color: Qt.darker(nightTile.color, 1.04) }
+                                }
+                                Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 6; anchors.rightMargin: 5
+                                    spacing: 5
+
+                                    Rectangle {
+                                        width: 22; height: 22; radius: 11
+                                        color: ControlCenterService.nightLightEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18) : Qt.rgba(1, 1, 1, 0.06)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\uf03d"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: ControlCenterService.nightLightEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 1
+                                        width: parent.width - 27
+
+                                        Text {
+                                            text: "Night"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            color: ControlCenterService.nightLightEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                        Text {
+                                            text: ControlCenterService.nightLightEnabled ? "On" : "Off"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 8
+                                            color: ControlCenterService.nightLightEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.78) : Theme.textMuted
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: nightMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: ControlCenterService.toggleNightLight()
                                 }
                             }
                         }
                     }
 
-                    // Row 2: Minimalist Color Palette
-                    Item {
+                    // Row 2: Volume Slider (8) + Conservation Mode (9)
+                    Row {
                         width: parent.width
-                        height: 22
+                        height: 36
+                        spacing: 6
+
+                        M3HorizontalSlider {
+                            width: parent.width - 90 - 6
+                            height: parent.height
+                            value: root.volLevel
+                            isMuted: root.volMuted
+                            activeColor: isMuted ? Theme.error : Theme.volumeActive
+                            icon: (root.volMuted || root.volLevel === 0) ? "\ue04f" : (root.volLevel < 0.5 ? "\ue04d" : "\ue050")
+                            mutedIcon: "\ue04f"
+                            onMoved: val => root.setVolumeFraction(val)
+                            onIconClicked: root.toggleMute()
+                        }
+
+                        Item {
+                            width: 90
+                            height: parent.height
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 1; anchors.bottomMargin: -1
+                                radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                            }
+                            Rectangle {
+                                id: consTile
+                                anchors.fill: parent
+                                radius: 10
+                                color: IdeapadService.conservationEnabled ? Theme.conservationActive : (consMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
+                                scale: consMouse.pressed ? 0.95 : (consMouse.containsMouse ? 1.02 : 1.0)
+                                gradient: (Colors.activeTheme === "espresso") ? null : consGrad
+                                Gradient {
+                                    id: consGrad
+                                    GradientStop { position: 0.0; color: Qt.tint(consTile.color, Qt.rgba(1, 1, 1, IdeapadService.conservationEnabled ? 0.06 : 0.03)) }
+                                    GradientStop { position: 1.0; color: Qt.darker(consTile.color, 1.04) }
+                                }
+                                Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 6; anchors.rightMargin: 5
+                                    spacing: 5
+
+                                    Rectangle {
+                                        width: 20; height: 20; radius: 10
+                                        color: IdeapadService.conservationEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18) : (Colors.activeTheme === "espresso" ? Qt.rgba(Theme.green.r, Theme.green.g, Theme.green.b, 0.14) : Qt.rgba(1, 1, 1, 0.06))
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\uea35"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: IdeapadService.conservationEnabled ? Theme.textOnPrimary : (Colors.activeTheme === "espresso" ? Theme.green : Theme.textPrimary)
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 1
+                                        width: parent.width - 25
+
+                                        Text {
+                                            text: "Conserve"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 9
+                                            font.weight: Font.DemiBold
+                                            color: IdeapadService.conservationEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: consMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: IdeapadService.toggleConservation()
+                                }
+                            }
+                        }
+                    }
+
+                    // Row 3: Brightness Slider (10) + Rapid Charge (11)
+                    Row {
+                        width: parent.width
+                        height: 36
+                        spacing: 6
+
+                        M3HorizontalSlider {
+                            width: parent.width - 90 - 6
+                            height: parent.height
+                            value: root.brightLevel
+                            activeColor: Theme.brightnessActive
+                            icon: "\ue518"
+                            onMoved: val => root.setBrightnessFraction(val)
+                            onIconClicked: {
+                                if (root.brightLevel > 0.5) root.setBrightnessFraction(0.25);
+                                else root.setBrightnessFraction(0.85);
+                            }
+                        }
+
+                        Item {
+                            width: 90
+                            height: parent.height
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 1; anchors.bottomMargin: -1
+                                radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                            }
+                            Rectangle {
+                                id: rapidTile
+                                anchors.fill: parent
+                                radius: 10
+                                color: IdeapadService.rapidChargeEnabled ? Theme.rapidChargeActive : (rapidMouse.containsMouse ? Qt.lighter(Theme.surfaceContainer, 1.04) : Theme.surfaceContainer)
+                                scale: rapidMouse.pressed ? 0.95 : (rapidMouse.containsMouse ? 1.02 : 1.0)
+                                gradient: (Colors.activeTheme === "espresso") ? null : rapidGrad
+                                Gradient {
+                                    id: rapidGrad
+                                    GradientStop { position: 0.0; color: Qt.tint(rapidTile.color, Qt.rgba(1, 1, 1, IdeapadService.rapidChargeEnabled ? 0.06 : 0.03)) }
+                                    GradientStop { position: 1.0; color: Qt.darker(rapidTile.color, 1.04) }
+                                }
+                                Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 6; anchors.rightMargin: 5
+                                    spacing: 5
+
+                                    Rectangle {
+                                        width: 20; height: 20; radius: 10
+                                        color: IdeapadService.rapidChargeEnabled ? Qt.rgba(Theme.textOnPrimary.r, Theme.textOnPrimary.g, Theme.textOnPrimary.b, 0.18) : (Colors.activeTheme === "espresso" ? Qt.rgba(Theme.yellow.r, Theme.yellow.g, Theme.yellow.b, 0.14) : Qt.rgba(1, 1, 1, 0.06))
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\uea0b"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: IdeapadService.rapidChargeEnabled ? Theme.textOnPrimary : (Colors.activeTheme === "espresso" ? Theme.yellow : Theme.textPrimary)
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 1
+                                        width: parent.width - 25
+
+                                        Text {
+                                            text: "Rapid"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 9
+                                            font.weight: Font.DemiBold
+                                            color: IdeapadService.rapidChargeEnabled ? Theme.textOnPrimary : Theme.textPrimary
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: rapidMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: IdeapadService.toggleRapidCharge()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 12. Calendar (Right Block, 200px)
+                Item {
+                    id: calContainer
+                    width: parent.width - 378 - 6
+                    height: parent.height
+
+                    property int calYear: root.currentTime.getFullYear()
+                    property int calMonth: root.currentTime.getMonth()
+
+                    readonly property var monthNames: [
+                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                    ]
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.topMargin: 1; anchors.bottomMargin: -1
+                        radius: 12; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                    }
+
+                    Rectangle {
+                        id: calendarCard
+                        anchors.fill: parent
+                        radius: 12
+                        color: Theme.surfaceContainer
+                        gradient: (Colors.activeTheme === "espresso") ? null : calGrad
+                        Gradient {
+                            id: calGrad
+                            GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
+                            GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
+                        }
+
+                        Column {
+                            anchors.fill: parent
+                            anchors.margins: 7
+                            spacing: 4
+
+                            Row {
+                                width: parent.width
+                                height: 18
+
+                                Text {
+                                    text: calContainer.monthNames[calContainer.calMonth] + " " + calContainer.calYear
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    color: Theme.textPrimary
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Item { width: parent.width - parent.children[0].width - 36; height: 1 }
+
+                                Row {
+                                    spacing: 2
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    Rectangle {
+                                        width: 16; height: 16; radius: 4
+                                        color: prevMonthMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\ue5cb"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: Theme.textMuted
+                                        }
+                                        MouseArea {
+                                            id: prevMonthMouse
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (calContainer.calMonth === 0) {
+                                                    calContainer.calMonth = 11;
+                                                    calContainer.calYear--;
+                                                } else {
+                                                    calContainer.calMonth--;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: 16; height: 16; radius: 4
+                                        color: nextMonthMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\ue5cc"
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 13
+                                            color: Theme.textMuted
+                                        }
+                                        MouseArea {
+                                            id: nextMonthMouse
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (calContainer.calMonth === 11) {
+                                                    calContainer.calMonth = 0;
+                                                    calContainer.calYear++;
+                                                } else {
+                                                    calContainer.calMonth++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                spacing: Math.floor((parent.width - 7 * 20) / 6)
+
+                                Repeater {
+                                    model: 7
+                                    Text {
+                                        required property int index
+                                        width: 20
+                                        horizontalAlignment: Text.AlignHCenter
+                                        text: ["S", "M", "T", "W", "T", "F", "S"][index]
+                                        color: Theme.textMuted
+                                        font.pixelSize: 8
+                                        font.family: Theme.fontFamily
+                                        font.weight: Font.DemiBold
+                                    }
+                                }
+                            }
+
+                            Grid {
+                                columns: 7
+                                columnSpacing: Math.floor((parent.width - 7 * 20) / 6)
+                                rowSpacing: 2
+
+                                readonly property int firstDay: new Date(calContainer.calYear, calContainer.calMonth, 1).getDay()
+                                readonly property int totalDays: new Date(calContainer.calYear, calContainer.calMonth + 1, 0).getDate()
+                                readonly property int isCurrentMonth: (calContainer.calYear === root.currentTime.getFullYear() && calContainer.calMonth === root.currentTime.getMonth())
+
+                                Repeater {
+                                    model: 35
+
+                                    Rectangle {
+                                        id: dayCell
+                                        required property int index
+                                        width: 20; height: 14; radius: 5
+
+                                        readonly property int dayNumber: index - parent.firstDay + 1
+                                        readonly property bool isValid: dayNumber >= 1 && dayNumber <= parent.totalDays
+                                        readonly property bool isToday: parent.isCurrentMonth && isValid && (dayNumber === root.currentTime.getDate())
+
+                                        color: isToday ? Theme.primary : (dayMouse.containsMouse && isValid ? Qt.rgba(1, 1, 1, 0.06) : "transparent")
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: dayCell.isValid ? dayCell.dayNumber : ""
+                                            color: dayCell.isToday ? Theme.textOnPrimary : Theme.textPrimary
+                                            font.pixelSize: 8
+                                            font.family: Theme.fontFamily
+                                            font.weight: dayCell.isToday ? Font.DemiBold : Font.Normal
+                                        }
+
+                                        MouseArea {
+                                            id: dayMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: dayCell.isValid
+                                            cursorShape: dayCell.isValid ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // BOTTOM ROW: Keyboard RGB (13-15), Color (16), Theme (17)
+            Row {
+                width: parent.width
+                height: 36
+                spacing: 6
+
+                // 13-15. Keyboard RGB Mode (186px)
+                Item {
+                    width: 186
+                    height: parent.height
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.topMargin: 1; anchors.bottomMargin: -1
+                        radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                    }
+
+                    Rectangle {
+                        id: rgbModesCard
+                        anchors.fill: parent
+                        radius: 10
+                        color: Theme.surfaceContainer
+                        gradient: (Colors.activeTheme === "espresso") ? null : rgbModesGrad
+                        Gradient {
+                            id: rgbModesGrad
+                            GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
+                            GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
+                        }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 4
+
+                            Repeater {
+                                model: [
+                                    { id: "wave", name: "Wave", icon: "\ueb3e" },
+                                    { id: "breath", name: "Breath", icon: "\uefd8" },
+                                    { id: "static", name: "Static", icon: "\ue412" }
+                                ]
+
+                                Rectangle {
+                                    id: rgbModeBtn
+                                    required property var modelData
+                                    readonly property bool isActive: RgbService.power && RgbService.mode === modelData.id
+
+                                    width: Math.floor((parent.width - 8) / 3)
+                                    height: parent.height
+                                    radius: 7
+                                    color: isActive ? Theme.selectionActive : (rgbBtnMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
+                                    scale: rgbBtnMouse.pressed ? 0.94 : (rgbBtnMouse.containsMouse ? 1.02 : 1.0)
+                                    gradient: (Colors.activeTheme === "espresso") ? null : (isActive ? rgbGrad : rgbSubtleGrad)
+
+                                    Gradient {
+                                        id: rgbGrad
+                                        GradientStop { position: 0.0; color: Qt.tint(Theme.selectionActive, Qt.rgba(1, 1, 1, 0.06)) }
+                                        GradientStop { position: 1.0; color: Qt.darker(Theme.selectionActive, 1.04) }
+                                    }
+
+                                    Gradient {
+                                        id: rgbSubtleGrad
+                                        GradientStop { position: 0.0; color: Qt.tint(rgbModeBtn.color, Qt.rgba(1, 1, 1, 0.03)) }
+                                        GradientStop { position: 1.0; color: Qt.darker(rgbModeBtn.color, 1.03) }
+                                    }
+
+                                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                    Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 4
+
+                                        Text {
+                                            text: rgbModeBtn.modelData.icon
+                                            font.family: matSymbols.name
+                                            font.pixelSize: 12
+                                            color: rgbModeBtn.isActive ? Theme.textOnPrimary : Theme.textPrimary
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+
+                                        Text {
+                                            text: rgbModeBtn.modelData.name
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 9
+                                            font.weight: rgbModeBtn.isActive ? Font.DemiBold : Font.Normal
+                                            color: rgbModeBtn.isActive ? Theme.textOnPrimary : Theme.textMuted
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: rgbBtnMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: RgbService.setMode(rgbModeBtn.modelData.id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 16. Keyboard Backlight Color (192px)
+                Item {
+                    width: 192
+                    height: parent.height
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.topMargin: 1; anchors.bottomMargin: -1
+                        radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                    }
+
+                    Rectangle {
+                        id: rgbColorCard
+                        anchors.fill: parent
+                        radius: 10
+                        color: Theme.surfaceContainer
+                        gradient: (Colors.activeTheme === "espresso") ? null : rgbColorGrad
+                        Gradient {
+                            id: rgbColorGrad
+                            GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
+                            GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
+                        }
 
                         Row {
                             anchors.centerIn: parent
-                            spacing: 12
+                            spacing: 7
 
                             Repeater {
                                 model: ["#ffffff", "#00d4ff", "#30d158", "#ffd60a", "#ff9500", "#ff3b30", "#bf5af2"]
@@ -1909,15 +1501,14 @@ Item {
                                     required property string modelData
                                     readonly property bool isActive: (RgbService.zones && RgbService.zones[0] ? RgbService.zones[0].toLowerCase() : "") === modelData.toLowerCase() && RgbService.mode === "static"
 
-                                    width: 22
-                                    height: 22
+                                    width: 18
+                                    height: 18
 
-                                    // Active subtle halo disc (no border!)
                                     Rectangle {
                                         anchors.centerIn: parent
-                                        width: dotItem.isActive ? 22 : 0
-                                        height: dotItem.isActive ? 22 : 0
-                                        radius: 11
+                                        width: dotItem.isActive ? 18 : 0
+                                        height: dotItem.isActive ? 18 : 0
+                                        radius: 9
                                         color: Qt.rgba(colorDot.color.r, colorDot.color.g, colorDot.color.b, 0.28)
                                         visible: dotItem.isActive
 
@@ -1928,7 +1519,7 @@ Item {
                                     Rectangle {
                                         id: colorDot
                                         anchors.centerIn: parent
-                                        width: dotItem.isActive ? 12 : (dotMouse.containsMouse ? 12 : 10)
+                                        width: dotItem.isActive ? 11 : (dotMouse.containsMouse ? 11 : 9)
                                         height: width
                                         radius: width / 2
                                         color: dotItem.modelData
@@ -1952,218 +1543,209 @@ Item {
                         }
                     }
                 }
-            }
-        }
 
-        // ════════════════════════════════════════════════════════════
-        // 6. Theme Selector Carousel (Wireframe)
-        // ════════════════════════════════════════════════════════════
-        Item {
-            width: parent.width
-            height: 46
+                // 17. Shell Theme Carousel (200px)
+                Item {
+                    width: parent.width - 186 - 192 - 12
+                    height: parent.height
 
-            // Ambient drop shadow beneath Carousel
-            Rectangle {
-                anchors.fill: parent
-                anchors.topMargin: 1
-                anchors.bottomMargin: -1
-                radius: 16
-                color: Qt.rgba(0, 0, 0, 0.18)
-                z: -1
-            }
-
-            Rectangle {
-                id: themeCarouselCard
-                anchors.fill: parent
-                radius: 16
-                color: Theme.surfaceContainer
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
-                    GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
-                }
-
-                readonly property var themes: [
-                    { id: "monochrome", label: "Monochrome" },
-                    { id: "vercel",     label: "Vercel" },
-                    { id: "everblush",  label: "Everblush" },
-                    { id: "wallpaper",  label: "Wallpaper" },
-                    { id: "gruvbox",    label: "Gruvbox" },
-                    { id: "everforest", label: "Everforest" },
-                    { id: "monokai",    label: "Monokai" },
-                    { id: "catppuccin", label: "Catppuccin" },
-                    { id: "ayu_dark",   label: "Ayu Dark" }
-                ]
-
-                property int pageIndex: 0
-                readonly property int visibleItems: 3
-                readonly property int maxPage: Math.ceil(themes.length / visibleItems) - 1
-
-                function syncPageIndex() {
-                    for (let i = 0; i < themes.length; i++) {
-                        if (themes[i].id === ShellConfig.currentTheme) {
-                            pageIndex = Math.floor(i / visibleItems);
-                            break;
-                        }
-                    }
-                }
-
-                Component.onCompleted: syncPageIndex()
-
-                Connections {
-                    target: ShellConfig
-                    function onCurrentThemeChanged() {
-                        themeCarouselCard.syncPageIndex();
-                    }
-                }
-
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: 6
-                    spacing: 6
-
-                    // Left Arrow Button
                     Rectangle {
-                        width: 30
-                        height: parent.height
-                        radius: 10
-                        color: leftArrowMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                        scale: leftArrowMouse.pressed ? 0.90 : 1.0
-                        Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                        Behavior on scale { NumberAnimation { duration: 80 } }
+                        anchors.fill: parent
+                        anchors.topMargin: 1; anchors.bottomMargin: -1
+                        radius: 10; color: Qt.rgba(0, 0, 0, 0.16); z: -1
+                    }
 
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\ue5cb" // chevron_left
-                            font.family: matSymbols.name
-                            font.pixelSize: 18
-                            color: leftArrowMouse.containsMouse ? Theme.primary : Theme.textMuted
+                    Rectangle {
+                        id: themeCarouselCard
+                        anchors.fill: parent
+                        radius: 10
+                        color: Theme.surfaceContainer
+                        gradient: (Colors.activeTheme === "espresso") ? null : carouselGrad
+                        Gradient {
+                            id: carouselGrad
+                            GradientStop { position: 0.0; color: Qt.tint(Theme.surfaceContainer, Qt.rgba(1, 1, 1, 0.03)) }
+                            GradientStop { position: 1.0; color: Qt.darker(Theme.surfaceContainer, 1.04) }
                         }
 
-                        MouseArea {
-                            id: leftArrowMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (themeCarouselCard.pageIndex > 0) {
-                                    themeCarouselCard.pageIndex--;
-                                } else {
-                                    themeCarouselCard.pageIndex = themeCarouselCard.maxPage;
+                        readonly property var themes: [
+                            { id: "monochrome", label: "Mono" },
+                            { id: "vercel",     label: "Vercel" },
+                            { id: "everblush",  label: "Everblush" },
+                            { id: "wallpaper",  label: "Wall" },
+                            { id: "gruvbox",    label: "Gruvbox" },
+                            { id: "everforest", label: "Forest" },
+                            { id: "monokai",    label: "Monokai" },
+                            { id: "catppuccin", label: "Catppuccin" },
+                            { id: "ayu_dark",   label: "Ayu" },
+                            { id: "espresso",   label: "Espresso" }
+                        ]
+
+                        property int pageIndex: 0
+                        readonly property int visibleItems: 2
+                        readonly property int maxPage: Math.ceil(themes.length / visibleItems) - 1
+
+                        function syncPageIndex() {
+                            for (let i = 0; i < themes.length; i++) {
+                                if (themes[i].id === ShellConfig.currentTheme) {
+                                    pageIndex = Math.floor(i / visibleItems);
+                                    break;
                                 }
                             }
                         }
-                    }
 
-                    // 3 Theme Buttons
-                    Row {
-                        width: parent.width - 60 - 12
-                        height: parent.height
-                        spacing: 6
+                        Component.onCompleted: syncPageIndex()
 
-                        Repeater {
-                            model: themeCarouselCard.visibleItems
+                        Connections {
+                            target: ShellConfig
+                            function onCurrentThemeChanged() {
+                                themeCarouselCard.syncPageIndex();
+                            }
+                        }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 4
 
                             Rectangle {
-                                id: themeBtn
-                                required property int modelData
-                                readonly property int itemIdx: themeCarouselCard.pageIndex * themeCarouselCard.visibleItems + modelData
-                                readonly property var themeItem: itemIdx < themeCarouselCard.themes.length ? themeCarouselCard.themes[itemIdx] : null
-                                readonly property bool isSelected: themeItem ? (ShellConfig.currentTheme === themeItem.id) : false
-
-                                width: Math.floor((parent.width - 12) / 3)
+                                width: 18
                                 height: parent.height
-                                radius: 10
-                                visible: themeItem !== null
-                                color: isSelected ? Theme.activeTileBg : (themeBtnMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.03))
-                                scale: themeBtnMouse.pressed ? 0.95 : (themeBtnMouse.containsMouse ? 1.02 : 1.0)
-                                gradient: isSelected ? themeGrad : themeSubtleGrad
+                                radius: 6
+                                color: leftArrowMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                                scale: leftArrowMouse.pressed ? 0.90 : 1.0
+                                Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
 
-                                Gradient {
-                                    id: themeGrad
-                                    GradientStop { position: 0.0; color: Qt.tint(Theme.activeTileBg, Qt.rgba(1, 1, 1, 0.06)) }
-                                    GradientStop { position: 1.0; color: Qt.darker(Theme.activeTileBg, 1.04) }
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\ue5cb"
+                                    font.family: matSymbols.name
+                                    font.pixelSize: 14
+                                    color: leftArrowMouse.containsMouse ? Theme.primary : Theme.textMuted
                                 }
 
-                                Gradient {
-                                    id: themeSubtleGrad
-                                    GradientStop { position: 0.0; color: Qt.tint(themeBtn.color, Qt.rgba(1, 1, 1, 0.03)) }
-                                    GradientStop { position: 1.0; color: Qt.darker(themeBtn.color, 1.03) }
+                                MouseArea {
+                                    id: leftArrowMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (themeCarouselCard.pageIndex > 0) {
+                                            themeCarouselCard.pageIndex--;
+                                        } else {
+                                            themeCarouselCard.pageIndex = themeCarouselCard.maxPage;
+                                        }
+                                    }
                                 }
-
-                            Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                            Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: themeBtn.themeItem ? themeBtn.themeItem.label : ""
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 11
-                                font.weight: themeBtn.isSelected ? Font.DemiBold : Font.Normal
-                                color: themeBtn.isSelected ? Theme.textOnPrimary : Theme.textPrimary
-                                elide: Text.ElideRight
                             }
 
-                            MouseArea {
-                                id: themeBtnMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (themeBtn.themeItem) {
-                                        ShellConfig.setTheme(themeBtn.themeItem.id);
+                            Row {
+                                width: parent.width - 36 - 8
+                                height: parent.height
+                                spacing: 4
+
+                                Repeater {
+                                    model: themeCarouselCard.visibleItems
+
+                                    Rectangle {
+                                        id: themeBtn
+                                        required property int modelData
+                                        readonly property int itemIdx: themeCarouselCard.pageIndex * themeCarouselCard.visibleItems + modelData
+                                        readonly property var themeItem: itemIdx < themeCarouselCard.themes.length ? themeCarouselCard.themes[itemIdx] : null
+                                        readonly property bool isSelected: themeItem ? (ShellConfig.currentTheme === themeItem.id) : false
+
+                                        width: Math.floor((parent.width - 4) / 2)
+                                        height: parent.height
+                                        radius: 7
+                                        visible: themeItem !== null
+                                        color: isSelected ? Theme.selectionActive : (themeBtnMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.03))
+                                        scale: themeBtnMouse.pressed ? 0.95 : (themeBtnMouse.containsMouse ? 1.02 : 1.0)
+                                        gradient: (Colors.activeTheme === "espresso") ? null : (isSelected ? themeGrad : themeSubtleGrad)
+
+                                        Gradient {
+                                            id: themeGrad
+                                            GradientStop { position: 0.0; color: Qt.tint(Theme.selectionActive, Qt.rgba(1, 1, 1, 0.06)) }
+                                            GradientStop { position: 1.0; color: Qt.darker(Theme.selectionActive, 1.04) }
+                                        }
+
+                                        Gradient {
+                                            id: themeSubtleGrad
+                                            GradientStop { position: 0.0; color: Qt.tint(themeBtn.color, Qt.rgba(1, 1, 1, 0.03)) }
+                                            GradientStop { position: 1.0; color: Qt.darker(themeBtn.color, 1.03) }
+                                        }
+
+                                        Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                        Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: themeBtn.themeItem ? themeBtn.themeItem.label : ""
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 9
+                                            font.weight: themeBtn.isSelected ? Font.DemiBold : Font.Normal
+                                            color: themeBtn.isSelected ? Theme.textOnPrimary : Theme.textPrimary
+                                            elide: Text.ElideRight
+                                        }
+
+                                        MouseArea {
+                                            id: themeBtnMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (themeBtn.themeItem) {
+                                                    ShellConfig.setTheme(themeBtn.themeItem.id);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: 18
+                                height: parent.height
+                                radius: 6
+                                color: rightArrowMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                                scale: rightArrowMouse.pressed ? 0.90 : 1.0
+                                Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
+                                Behavior on scale { NumberAnimation { duration: 80 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\ue5cc"
+                                    font.family: matSymbols.name
+                                    font.pixelSize: 14
+                                    color: rightArrowMouse.containsMouse ? Theme.primary : Theme.textMuted
+                                }
+
+                                MouseArea {
+                                    id: rightArrowMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (themeCarouselCard.pageIndex < themeCarouselCard.maxPage) {
+                                            themeCarouselCard.pageIndex++;
+                                        } else {
+                                            themeCarouselCard.pageIndex = 0;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-
-                // Right Arrow Button
-                Rectangle {
-                    width: 30
-                    height: parent.height
-                    radius: 10
-                    color: rightArrowMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                    scale: rightArrowMouse.pressed ? 0.90 : 1.0
-                    Behavior on color { ColorAnimation { duration: Theme.animDurationFast } }
-                    Behavior on scale { NumberAnimation { duration: 80 } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "\ue5cc" // chevron_right
-                        font.family: matSymbols.name
-                        font.pixelSize: 18
-                        color: rightArrowMouse.containsMouse ? Theme.primary : Theme.textMuted
-                    }
-
-                    MouseArea {
-                        id: rightArrowMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (themeCarouselCard.pageIndex < themeCarouselCard.maxPage) {
-                                themeCarouselCard.pageIndex++;
-                            } else {
-                                themeCarouselCard.pageIndex = 0;
-                            }
-                        }
-                    }
-                }
             }
         }
     }
-    }
 
-    // ────────────────────────────────────────────────────────────
-    // Wi-Fi Details View (Replaces Control Center with exact same size & style)
-    // ────────────────────────────────────────────────────────────
     WifiView {
         id: wifiSurfaceView
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 12
+        anchors.margins: 8
         opacity: root.currentView === "wifi" ? 1.0 : 0.0
         scale: root.currentView === "wifi" ? 1.0 : 0.96
         visible: opacity > 0.01
@@ -2177,4 +1759,3 @@ Item {
         }
     }
 }
-

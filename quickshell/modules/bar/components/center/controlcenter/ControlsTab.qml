@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import "../../../../../theme"
 import "../../../../../components"
+import "../../../../../core" as C
 
 Item {
     id: root
@@ -15,12 +16,15 @@ Item {
     property bool wifiEnabled: true
     property string wifiSsid: ""
     property bool bluetoothEnabled: false
-    property real volLevel: 0.50
-    property bool volMuted: false
-    property real brightLevel: 0.50
+    
+    // Bind directly to real-time services
+    readonly property real volLevel: C.Audio.volLevel / 100.0
+    readonly property bool volMuted: C.Audio.volMuted
+    readonly property real brightLevel: C.Brightness.level / 100.0
+    readonly property bool micMuted: C.Audio.micMuted
+    
     property string currentSinkName: "Speakers"
     property int currentSinkId: 0
-    property bool micMuted: false
     property string powerProfile: "balanced"
 
     implicitWidth: 348
@@ -42,22 +46,6 @@ Item {
         stdout: SplitParser { onRead: data => { root.bluetoothEnabled = (data.trim() === "on"); } }
     }
     Process {
-        id: volProc
-        command: ["bash", "-c", "wpctl get-volume @DEFAULT_AUDIO_SINK@"]
-        stdout: SplitParser { onRead: data => {
-            let m = data.trim().match(/Volume:\s+([0-9.]+)(\s+\[MUTED\])?/);
-            if (m) { root.volLevel = Math.max(0, Math.min(1, parseFloat(m[1]) || 0)); root.volMuted = !!m[2]; }
-        }}
-    }
-    Process {
-        id: brightProc
-        command: ["bash", "-c", "brightnessctl -m | head -n1"]
-        stdout: SplitParser { onRead: data => {
-            let p = data.trim().split(",");
-            if (p.length >= 4) root.brightLevel = Math.max(0.05, Math.min(1, (parseFloat(p[3]) || 0) / 100));
-        }}
-    }
-    Process {
         id: sinkProc
         command: ["bash", "-c", "wpctl status | awk '/Sinks:/,/Sources:/' | grep -E '\\*\\s+[0-9]+' | head -n1"]
         stdout: SplitParser { onRead: data => {
@@ -70,11 +58,6 @@ Item {
         }}
     }
     Process {
-        id: micProc
-        command: ["bash", "-c", "wpctl get-volume @DEFAULT_AUDIO_SOURCE@"]
-        stdout: SplitParser { onRead: data => { root.micMuted = data.includes("[MUTED]"); } }
-    }
-    Process {
         id: powerProc
         command: ["powerprofilesctl", "get"]
         stdout: SplitParser { onRead: data => { let p = data.trim(); if (p) root.powerProfile = p; } }
@@ -85,10 +68,7 @@ Item {
         onTriggered: {
             if (!wifiProc.running) wifiProc.running = true;
             if (!btProc.running) btProc.running = true;
-            if (!volProc.running) volProc.running = true;
-            if (!brightProc.running) brightProc.running = true;
             if (!sinkProc.running) sinkProc.running = true;
-            if (!micProc.running) micProc.running = true;
             if (!powerProc.running) powerProc.running = true;
         }
     }
@@ -104,24 +84,17 @@ Item {
         root.bluetoothEnabled = !root.bluetoothEnabled;
     }
     function toggleMute() {
-        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
-        root.volMuted = !root.volMuted;
+        C.Audio.toggleMute();
     }
     function setVolumeFraction(f) {
-        let pct = Math.round(f * 100);
-        root.volLevel = f;
-        if (root.volMuted) { Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"]); root.volMuted = false; }
-        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", pct + "%"]);
+        C.Audio.setVolume(f * 100);
     }
     function setBrightnessFraction(f) {
-        let pct = Math.round(f * 100);
-        root.brightLevel = f;
-        Quickshell.execDetached(["brightnessctl", "set", pct + "%"]);
+        C.Brightness.setBrightness(f * 100);
     }
     function cycleAudioSink() { Quickshell.execDetached(["bash", "-c", "~/.config/quickshell/scripts/cycle_sink.sh"]); }
     function toggleMic() {
-        Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"]);
-        root.micMuted = !root.micMuted;
+        C.Audio.toggleMicMute();
     }
     function setProfile(id) {
         root.powerProfile = id;
