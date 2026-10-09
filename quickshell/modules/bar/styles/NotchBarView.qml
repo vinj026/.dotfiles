@@ -19,15 +19,24 @@ Item {
     readonly property bool isMediaActive: MediaPopupService.isOpen && (MediaPopupService.targetMonitor === "" || MediaPopupService.targetMonitor === root.screen.name)
     readonly property bool isWallpaperActive: WallpaperSwitcherService.isOpen && (WallpaperSwitcherService.targetMonitor === "" || WallpaperSwitcherService.targetMonitor === root.screen.name)
     readonly property bool isScreenshotActive: ScreenshotService.isOpen && (ScreenshotService.targetMonitor === "" || ScreenshotService.targetMonitor === root.screen.name)
-    readonly property bool isOverlayActive: root.isLauncherActive || root.isControlCenterActive || root.isMediaActive || root.isWallpaperActive || root.isScreenshotActive
+    
+    // isOverlayActive defines states that drop down as a floating card
+    readonly property bool isOverlayActive: root.isLauncherActive || root.isControlCenterActive || root.isMediaActive || root.isWallpaperActive
+
+    // isAnyPopupActive defines states that require full screen mask and keyboard focus
+    readonly property bool isAnyPopupActive: root.isOverlayActive || root.isScreenshotActive
+
+    readonly property real scTargetW: (screenshotSurface && screenshotSurface.implicitWidth > 0)
+        ? screenshotSurface.implicitWidth : 480
+    readonly property real scTargetH: Theme.notchHeight
 
     // Base notch width based on active page
     readonly property real baseWidth: Math.max(160, centerIsland.baseWidth + 44)
 
-    // Total target resting width
+    // Total target resting width: now it stretches for Screenshot!
     readonly property real targetCenterWidth: centerIsland.isOsdActive
         ? (centerIsland.osdWidth + 44)
-        : root.baseWidth
+        : (root.isScreenshotActive ? root.scTargetW : root.baseWidth)
 
     // ALWAYS strictly centered
     readonly property real targetCenterLeft: (width - root.targetCenterWidth) / 2
@@ -44,18 +53,13 @@ Item {
     readonly property real wpTargetW: 440
     readonly property real wpTargetH: 180
 
-    readonly property real scTargetW: (screenshotSurface && screenshotSurface.implicitWidth > 0)
-        ? screenshotSurface.implicitWidth : 480
-    readonly property real scTargetH: Theme.notchHeight
-
-    readonly property real targetW: root.isLauncherActive ? 260 : (root.isControlCenterActive ? root.ccTargetW : (root.isMediaActive ? root.mediaTargetW : (root.isWallpaperActive ? root.wpTargetW : (root.isScreenshotActive ? root.scTargetW : root.targetCenterWidth))))
+    readonly property real targetW: root.isLauncherActive ? 260 : (root.isControlCenterActive ? root.ccTargetW : (root.isMediaActive ? root.mediaTargetW : (root.isWallpaperActive ? root.wpTargetW : root.targetCenterWidth)))
     readonly property real targetH: root.isLauncherActive ? 240 : (root.isControlCenterActive ? root.ccTargetH : (root.isMediaActive ? (mediaSurface && mediaSurface.implicitHeight > 0 ? mediaSurface.implicitHeight : 136) : (root.isWallpaperActive ? root.wpTargetH : Theme.notchHeight)))
     
-    // Screenshot stays docked at top (y=0) while other overlays drop down
     readonly property real targetX: root.isOverlayActive
         ? ((width - root.targetW) / 2)
         : root.targetCenterLeft
-    readonly property real targetY: (root.isOverlayActive && !root.isScreenshotActive) ? 10 : 0
+    readonly property real targetY: root.isOverlayActive ? 10 : 0
     readonly property real targetRadius: root.isControlCenterActive ? 16 : (root.isLauncherActive ? 10 : (root.isMediaActive ? 16 : (root.isWallpaperActive ? 16 : 14)))
 
 
@@ -129,12 +133,13 @@ Item {
     // ────────────────────────────────────────────────────────────
     MouseArea {
         anchors.fill: parent
-        enabled: root.isOverlayActive
+        enabled: root.isAnyPopupActive
         onClicked: {
             if (root.isLauncherActive) LauncherService.close();
             if (root.isControlCenterActive) ControlCenterService.close();
             if (root.isMediaActive) MediaPopupService.close();
             if (root.isWallpaperActive) WallpaperSwitcherService.close();
+            if (root.isScreenshotActive) ScreenshotService.close();
         }
     }
 
@@ -254,7 +259,7 @@ Item {
         // Catch clicks on card padding so they don't trigger backdrop close
         MouseArea {
             anchors.fill: parent
-            enabled: root.isOverlayActive
+            enabled: root.isAnyPopupActive
             onClicked: {}
         }
 
@@ -267,11 +272,11 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: root.targetCenterWidth
             height: Theme.notchHeight
-            opacity: root.isIslandDocked ? 1.0 : 0.0
-            visible: !root.isOverlayActive && (opacity > 0.01)
+            opacity: (root.isIslandDocked && !root.isScreenshotActive) ? 1.0 : 0.0
+            visible: (!root.isOverlayActive && !root.isScreenshotActive) && (opacity > 0.01)
 
             Behavior on opacity {
-                enabled: !root.isOverlayActive
+                enabled: !root.isOverlayActive && !root.isScreenshotActive
                 NumberAnimation {
                     duration: 160
                     easing.type: Theme.easeStandard

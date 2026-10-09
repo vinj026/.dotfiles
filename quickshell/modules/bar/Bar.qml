@@ -12,7 +12,7 @@ PanelWindow {
 
     WlrLayershell.namespace: "shell"
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.keyboardFocus: (root.currentStyle === "notch" && notchView.isOverlayActive)
+    WlrLayershell.keyboardFocus: (root.currentStyle === "notch" && notchView.isAnyPopupActive)
         ? WlrKeyboardFocus.Exclusive
         : WlrKeyboardFocus.None
 
@@ -56,7 +56,7 @@ PanelWindow {
     // Wayland Input Masking:
     // When launcher or control center is active: fullMask captures clicks across the screen for backdrop dismissal.
     // When idle/closed: compactMask captures ONLY the 30px notch and battery pill. All desktop space below passes clicks through!
-    mask: (root.currentStyle === "notch" && !notchView.isOverlayActive)
+    mask: (root.currentStyle === "notch" && !notchView.isAnyPopupActive)
         ? compactMask
         : fullMask
 
@@ -70,6 +70,21 @@ PanelWindow {
         id: compactMask
         Region { item: notchView.morphIslandItem }
         Region { item: notchView.batteryPillItem }
+    }
+
+    Item {
+        anchors.fill: parent
+        focus: root.currentStyle === "notch" && notchView.isAnyPopupActive
+        
+        Keys.onEscapePressed: {
+            if (root.currentStyle === "notch") {
+                if (notchView.isLauncherActive) LauncherService.close();
+                if (notchView.isControlCenterActive) ControlCenterService.close();
+                if (notchView.isMediaActive) MediaPopupService.close();
+                if (notchView.isWallpaperActive) WallpaperSwitcherService.close();
+                if (notchView.isScreenshotActive) ScreenshotService.close();
+            }
+        }
     }
 
     NotchBarView {
