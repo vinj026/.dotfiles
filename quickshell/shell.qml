@@ -8,7 +8,6 @@ import "./modules/launcher"
 import "./modules/notifications"
 import "./modules/media"
 import "./modules/wallpaper"
-import "./modules/search"
 import "./components"
 import qs.windows
 
@@ -212,15 +211,14 @@ ShellRoot {
         target: "search"
 
         function toggle() {
-            SearchService.toggle();
+            Quickshell.execDetached(["/home/vin/.local/bin/quicksnip"]);
         }
 
         function open() {
-            SearchService.open();
+            Quickshell.execDetached(["/home/vin/.local/bin/quicksnip"]);
         }
 
         function close() {
-            SearchService.close();
         }
     }
 
@@ -248,10 +246,6 @@ ShellRoot {
             }
 
             WallpaperSwitcherWindow {
-                screen: scopeRoot.modelData
-            }
-
-            SearchWindow {
                 screen: scopeRoot.modelData
             }
         }

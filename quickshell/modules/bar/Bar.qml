@@ -12,9 +12,7 @@ PanelWindow {
 
     WlrLayershell.namespace: "shell"
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.keyboardFocus: (root.currentStyle === "notch" && notchView.isAnyPopupActive)
-        ? WlrKeyboardFocus.Exclusive
-        : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     anchors {
         left: true

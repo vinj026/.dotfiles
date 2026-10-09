@@ -50,9 +50,8 @@ Singleton {
     }
 
     function openLens() {
-        let monitor = targetMonitor;
         close()
-        SearchService.open(monitor)
+        Quickshell.execDetached(["/home/vin/.local/bin/quicksnip"])
     }
 
     function openColorPicker() {
