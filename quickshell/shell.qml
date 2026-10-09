@@ -9,6 +9,7 @@ import "./modules/notifications"
 import "./modules/media"
 import "./modules/wallpaper"
 import "./components"
+import "./windows"
 
 ShellRoot {
     FontLoader {
@@ -190,6 +191,18 @@ ShellRoot {
     }
 
 
+    IpcHandler {
+        target: "screenshot"
+
+        function open(filePath: string) {
+            ScreenshotService.open(filePath);
+        }
+
+        function close() {
+            ScreenshotService.close();
+        }
+    }
+
     Variants {
         model: Quickshell.screens
 
@@ -217,6 +230,9 @@ ShellRoot {
                 screen: scopeRoot.modelData
             }
 
+            ScreenshotActionBar {
+                screen: scopeRoot.modelData
+            }
         }
     }
 }
