@@ -23,12 +23,12 @@ PanelWindow {
     
     visible: SearchService.isOpen && (SearchService.targetMonitor === "" || SearchService.targetMonitor === root.screen.name)
 
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
+    // Anchor only to top-left and manually set size to prevent the WM from 
+    // treating this as a fullscreen layer-shell which might trigger layout resets
+    anchors.top: true
+    anchors.left: true
+    width: screen.width
+    height: screen.height
     
     color: "transparent"
     
