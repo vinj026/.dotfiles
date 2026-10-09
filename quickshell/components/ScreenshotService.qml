@@ -50,8 +50,9 @@ Singleton {
     }
 
     function openLens() {
+        let monitor = targetMonitor;
         close()
-        SearchService.open(targetMonitor)
+        SearchService.open(monitor)
     }
 
     function openColorPicker() {
