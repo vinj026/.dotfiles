@@ -1,6 +1,5 @@
-// ScreenshotOverlay.qml - On-demand floating screenshot overlay
+// ScreenshotOverlay.qml — On-demand floating screenshot overlay
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
@@ -9,13 +8,13 @@ import "../components"
 
 PanelWindow {
     id: root
+
     visible: ScreenshotService.isOpen
     color: "transparent"
 
-    implicitWidth: panelContent.implicitWidth + C.Style.sp.md * 2
-    implicitHeight: panelContent.implicitHeight + C.Style.sp.md * 2
+    implicitWidth: panelContent.width + C.Style.sp.xl * 2
+    implicitHeight: panelContent.height + C.Style.sp.xl * 2
 
-    // Center or Top-Center positioning
     anchors {
         top: true
         bottom: false
@@ -27,42 +26,36 @@ PanelWindow {
         top: 120
     }
 
-    // Must be overlay, and request keyboard focus to catch Escape
     WlrLayershell.keyboardFocus: ScreenshotService.isOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.namespace: "quickshell:screenshotoverlay"
     WlrLayershell.layer: WlrLayer.Overlay
 
     onVisibleChanged: {
-        if (!visible && ScreenshotService.isOpen) {
+        if (!visible && ScreenshotService.isOpen)
             ScreenshotService.close()
-        }
     }
 
-    // Dismiss on Escape
+    // Escape to dismiss
     Item {
         anchors.fill: parent
         focus: true
-        Keys.onEscapePressed: {
-            ScreenshotService.close()
-        }
+        Keys.onEscapePressed: ScreenshotService.close()
     }
 
     Rectangle {
         id: panelContent
         anchors.centerIn: parent
-        width: layout.implicitWidth + 32
-        height: layout.implicitHeight + 16
+        width: layout.implicitWidth + C.Style.sp.xl4
+        height: layout.implicitHeight + C.Style.sp.xl
 
-        radius: 100 // Pill shape
-        color: Qt.rgba(C.Theme.surfaceContainer.r, C.Theme.surfaceContainer.g, C.Theme.surfaceContainer.b, 0.90)
-
-        // Strict anti-slop: no borders
+        radius: height / 2
+        color: C.Colors.overlay85
         border.width: 0
 
         RowLayout {
             id: layout
             anchors.centerIn: parent
-            spacing: 12
+            spacing: C.Style.sp.sm
 
             Repeater {
                 model: [
@@ -74,39 +67,42 @@ PanelWindow {
                 ]
 
                 delegate: Rectangle {
-                    id: btnRect
-                    Layout.preferredWidth: contentLayout.implicitWidth + 24
+                    Layout.preferredWidth: row.implicitWidth + C.Style.sp.xl
                     Layout.preferredHeight: 36
                     radius: 18
-                    color: btnMouse.pressed ? Qt.rgba(C.Theme.textPrimary.r, C.Theme.textPrimary.g, C.Theme.textPrimary.b, 0.1) : (btnMouse.containsMouse ? Qt.rgba(C.Theme.textPrimary.r, C.Theme.textPrimary.g, C.Theme.textPrimary.b, 0.05) : "transparent")
+                    color: ma.pressed
+                        ? C.Colors.alpha(C.Colors.text, 0.12)
+                        : ma.containsMouse
+                            ? C.Colors.alpha(C.Colors.text, 0.06)
+                            : "transparent"
                     border.width: 0
 
                     RowLayout {
-                        id: contentLayout
+                        id: row
                         anchors.centerIn: parent
-                        spacing: 6
+                        spacing: C.Style.sp.xs
 
                         Text {
                             text: modelData.icon
-                            font.family: "Material Icons"
+                            font.family: C.Style.fontIcon
                             font.pixelSize: 18
-                            color: C.Theme.textPrimary
+                            color: C.Colors.text
                         }
                         Text {
                             text: modelData.name
-                            font.family: C.Theme.fontFamily
+                            font.family: C.Style.fontSans
                             font.pixelSize: 13
                             font.weight: Font.Medium
-                            color: C.Theme.textPrimary
+                            color: C.Colors.text
                         }
                     }
 
                     MouseArea {
-                        id: btnMouse
+                        id: ma
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: modelData.fn()
                         cursorShape: Qt.PointingHandCursor
+                        onClicked: modelData.fn()
                     }
                 }
             }

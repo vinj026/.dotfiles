@@ -9,7 +9,6 @@ import "./modules/notifications"
 import "./modules/media"
 import "./modules/wallpaper"
 import "./components"
-import "./windows"
 
 ShellRoot {
     FontLoader {
