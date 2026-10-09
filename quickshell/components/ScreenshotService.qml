@@ -45,7 +45,8 @@ Singleton {
 
     function startRecording() {
         close()
-        C.ShellState.runDelayedAction("start-region")
+        // Use the actual working ScreenRecordService instead of missing script
+        ScreenRecordService.startRecording("region")
     }
 
     function openLens() {
