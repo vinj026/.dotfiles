@@ -8,6 +8,7 @@ import "./modules/launcher"
 import "./modules/notifications"
 import "./modules/media"
 import "./modules/wallpaper"
+import "./modules/search"
 import "./components"
 import qs.windows
 
@@ -207,6 +208,22 @@ ShellRoot {
         }
     }
 
+    IpcHandler {
+        target: "search"
+
+        function toggle() {
+            SearchService.toggle();
+        }
+
+        function open() {
+            SearchService.open();
+        }
+
+        function close() {
+            SearchService.close();
+        }
+    }
+
     Variants {
         model: Quickshell.screens
 
@@ -231,6 +248,10 @@ ShellRoot {
             }
 
             WallpaperSwitcherWindow {
+                screen: scopeRoot.modelData
+            }
+
+            SearchWindow {
                 screen: scopeRoot.modelData
             }
         }
