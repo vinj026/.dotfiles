@@ -9,6 +9,7 @@ import "./modules/notifications"
 import "./modules/media"
 import "./modules/wallpaper"
 import "./components"
+import qs.windows
 
 ShellRoot {
     FontLoader {
