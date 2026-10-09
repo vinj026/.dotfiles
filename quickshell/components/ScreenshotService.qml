@@ -8,10 +8,12 @@ Singleton {
     id: root
 
     property bool isOpen: false
-    property string latestScreenshotPath: ""
 
-    function open(filePath) {
-        latestScreenshotPath = filePath
+    function toggle() {
+        isOpen = !isOpen
+    }
+
+    function open() {
         isOpen = true
     }
 
@@ -21,16 +23,26 @@ Singleton {
 
     function takeFullscreen() {
         close()
-        C.ShellState.runDelayedAction("ss-full")
+        Quickshell.execDetached(["/home/vin/.local/bin/screenshot.sh", "full-save"])
     }
 
     function takeRegion() {
         close()
-        C.ShellState.runDelayedAction("ss-region")
+        Quickshell.execDetached(["/home/vin/.local/bin/screenshot.sh", "region-save"])
     }
 
     function startRecording() {
         close()
         C.ShellState.runDelayedAction("start-region")
+    }
+
+    function openLens() {
+        close()
+        Quickshell.execDetached(["/home/vin/.local/bin/screenshot.sh", "lens"])
+    }
+
+    function openColorPicker() {
+        close()
+        Quickshell.execDetached(["/home/vin/.local/bin/screenshot.sh", "color"])
     }
 }

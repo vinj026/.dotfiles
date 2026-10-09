@@ -194,6 +194,10 @@ ShellRoot {
     IpcHandler {
         target: "screenshot"
 
+        function toggle() {
+            ScreenshotService.toggle();
+        }
+
         function open(filePath: string) {
             ScreenshotService.open(filePath);
         }
@@ -230,7 +234,7 @@ ShellRoot {
                 screen: scopeRoot.modelData
             }
 
-            ScreenshotActionBar {
+            ScreenshotOverlay {
                 screen: scopeRoot.modelData
             }
         }
