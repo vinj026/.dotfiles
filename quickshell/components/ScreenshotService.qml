@@ -51,7 +51,7 @@ Singleton {
 
     function openLens() {
         close()
-        Quickshell.execDetached(["/home/vin/.local/bin/screenshot.sh", "lens"])
+        SearchService.open(targetMonitor)
     }
 
     function openColorPicker() {
