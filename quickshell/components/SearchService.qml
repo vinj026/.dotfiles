@@ -107,28 +107,17 @@ Singleton {
     }
 
     function sendToLens() {
-        // Build the HTML entirely in bash to avoid passing MBs of Base64 through QML/execve arguments
-        const buildHtml = [
-            `echo '<html><body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#111;color:#fff;font-family:system-ui"><p>Searching with Google Lens…</p><form id="f" method="POST" enctype="multipart/form-data" action="https://lens.google.com/v3/upload"></form><script>'`,
-            `echo "var b=atob('$B64');"`,
-            `echo 'var a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);var d=new DataTransfer();d.items.add(new File([a],"i.jpg",{type:"image/jpeg"}));var inp=document.createElement("input");inp.type="file";inp.name="encoded_image";inp.files=d.files;document.getElementById("f").appendChild(inp);document.getElementById("f").submit();'`,
-            `echo '</script></body></html>'`
-        ].join(" ; ");
-        
+        // Brave's strict shields block local HTML file form submissions to Google Lens.
+        // The most reliable fallback is copying the image to the clipboard and opening Lens.
         let cmd = [
-            `B64=$(base64 -w0 "${cropJpg}" 2>/dev/null || base64 -b0 "${cropJpg}")`,
-            `{ ${buildHtml} ; } > "${lensHtml}"`,
-            `xdg-open "${lensHtml}"`
+            `wl-copy < "${cropJpg}"`,
+            `notify-send -u low "Google Lens" "Screenshot copied to clipboard. Press Ctrl+V on the Lens page to search."`,
+            `xdg-open "https://lens.google.com/"`
         ].join(" && ");
         
-        let b64Proc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
-        b64Proc.command = ["bash", "-c", cmd];
+        Quickshell.execDetached(["bash", "-c", cmd]);
         
-        b64Proc.exited.connect((code) => {
-            isLoading = false;
-            close();
-            b64Proc.destroy();
-        });
-        b64Proc.running = true;
+        isLoading = false;
+        close();
     }
 }

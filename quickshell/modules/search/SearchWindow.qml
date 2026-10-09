@@ -7,28 +7,25 @@ import qs.core as C
 import "../../components"
 import "../../shapes"
 
-PanelWindow {
+Window {
     id: root
 
     required property ShellScreen screen
 
     WlrLayershell.namespace: "selection"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     
     // We only want to show the window on the monitor that requested it
-    // Wait, grim captures everything. Better to show on the monitor grim captures, or all monitors?
-    // QuickSnip captures the targetScreen, then shows on targetScreen.
-    
     visible: SearchService.isOpen && (SearchService.targetMonitor === "" || SearchService.targetMonitor === root.screen.name)
 
-    // Anchor only to top-left and manually set size to prevent the WM from 
-    // treating this as a fullscreen layer-shell which might trigger layout resets
-    anchors.top: true
-    anchors.left: true
+    // Position manually to avoid PanelWindow's exclusive zone logic 
+    // which might be triggering MangoWC's layout changes.
+    // Use Window flags that ensure floating behavior in case layer-shell fails.
     width: screen.width
     height: screen.height
+    
+    flags: Qt.Window | Qt.FramelessWindowHint | Qt.ToolTip | Qt.WindowStaysOnTopHint
     
     color: "transparent"
     
