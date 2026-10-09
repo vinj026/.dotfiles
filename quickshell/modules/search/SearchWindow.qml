@@ -13,7 +13,8 @@ PanelWindow {
 
     WlrLayershell.namespace: "search"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    exclusionMode: ExclusionMode.Ignore
     
     // We only want to show the window on the monitor that requested it
     // Wait, grim captures everything. Better to show on the monitor grim captures, or all monitors?

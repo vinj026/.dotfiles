@@ -83,15 +83,13 @@ Singleton {
     }
 
     function checkQrCode() {
-        let qrProc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
+        let qrProc = Qt.createQmlObject('import Quickshell.Io; Process { property string outputText: "" }', root);
         qrProc.command = ["zbarimg", "--raw", "-q", cropJpg];
         
-        let output = "";
-        qrProc.stdout = Qt.createQmlObject('import Quickshell.Io; SplitParser { onRead: data => { output += data; } }', qrProc);
+        qrProc.stdout = Qt.createQmlObject('import Quickshell.Io; SplitParser { onRead: data => { parent.outputText += data; } }', qrProc);
         
         qrProc.exited.connect((code) => {
-            qrProc.destroy();
-            output = output.trim();
+            let output = qrProc.outputText.trim();
             if (code === 0 && output.length > 0) {
                 // QR detected!
                 qrResult = output;
@@ -101,24 +99,25 @@ Singleton {
                 // No QR, send to Lens directly
                 sendToLens();
             }
+            qrProc.destroy();
         });
         qrProc.running = true;
     }
 
     function sendToLens() {
-        let b64Proc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
+        let b64Proc = Qt.createQmlObject('import Quickshell.Io; Process { property string b64Text: "" }', root);
         b64Proc.command = ["bash", "-c", `base64 -w0 "${cropJpg}" 2>/dev/null || base64 -b0 "${cropJpg}"`];
         
-        let b64 = "";
-        b64Proc.stdout = Qt.createQmlObject('import Quickshell.Io; SplitParser { onRead: data => { b64 += data; } }', b64Proc);
+        b64Proc.stdout = Qt.createQmlObject('import Quickshell.Io; SplitParser { onRead: data => { parent.b64Text += data; } }', b64Proc);
         
         b64Proc.exited.connect((code) => {
-            b64Proc.destroy();
+            let b64 = b64Proc.b64Text;
             if (code === 0 && b64.length > 0) {
                 buildAndOpenLensHtml(b64);
             }
             isLoading = false;
             close();
+            b64Proc.destroy();
         });
         b64Proc.running = true;
     }
