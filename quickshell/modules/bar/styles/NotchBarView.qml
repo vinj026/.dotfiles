@@ -46,16 +46,18 @@ Item {
 
     readonly property real scTargetW: (screenshotSurface && screenshotSurface.implicitWidth > 0)
         ? screenshotSurface.implicitWidth : 480
-    readonly property real scTargetH: (screenshotSurface && screenshotSurface.implicitHeight > 0)
-        ? screenshotSurface.implicitHeight : 44
+    readonly property real scTargetH: Theme.notchHeight
 
     readonly property real targetW: root.isLauncherActive ? 260 : (root.isControlCenterActive ? root.ccTargetW : (root.isMediaActive ? root.mediaTargetW : (root.isWallpaperActive ? root.wpTargetW : (root.isScreenshotActive ? root.scTargetW : root.targetCenterWidth))))
-    readonly property real targetH: root.isLauncherActive ? 240 : (root.isControlCenterActive ? root.ccTargetH : (root.isMediaActive ? (mediaSurface && mediaSurface.implicitHeight > 0 ? mediaSurface.implicitHeight : 136) : (root.isWallpaperActive ? root.wpTargetH : (root.isScreenshotActive ? root.scTargetH : Theme.notchHeight))))
+    readonly property real targetH: root.isLauncherActive ? 240 : (root.isControlCenterActive ? root.ccTargetH : (root.isMediaActive ? (mediaSurface && mediaSurface.implicitHeight > 0 ? mediaSurface.implicitHeight : 136) : (root.isWallpaperActive ? root.wpTargetH : Theme.notchHeight)))
+    
+    // Screenshot stays docked at top (y=0) while other overlays drop down
     readonly property real targetX: root.isOverlayActive
         ? ((width - root.targetW) / 2)
         : root.targetCenterLeft
-    readonly property real targetY: root.isOverlayActive ? 10 : 0
-    readonly property real targetRadius: root.isControlCenterActive ? 16 : (root.isLauncherActive ? 10 : (root.isMediaActive ? 16 : (root.isWallpaperActive ? 16 : (root.isScreenshotActive ? 22 : 14))))
+    readonly property real targetY: (root.isOverlayActive && !root.isScreenshotActive) ? 10 : 0
+    readonly property real targetRadius: root.isControlCenterActive ? 16 : (root.isLauncherActive ? 10 : (root.isMediaActive ? 16 : (root.isWallpaperActive ? 16 : 14)))
+
 
 
     // Ukishima Morph Closeness (Chebyshev distance normalized to 110px)
