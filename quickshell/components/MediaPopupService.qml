@@ -6,32 +6,20 @@ import "."
 Singleton {
     id: root
 
-    property bool isOpen: false
-    property string targetMonitor: ""
+    readonly property bool isOpen: ControlCenterService.activePopup === "media"
+    readonly property string targetMonitor: ControlCenterService.targetMonitor
 
-    function open(monitor): void {
-        if (ControlCenterService.isOpen) {
-            ControlCenterService.close();
-        }
-        if (LauncherService.isOpen) {
-            LauncherService.close();
-        }
-        if (typeof WallpaperSwitcherService !== "undefined" && WallpaperSwitcherService.isOpen) {
-            WallpaperSwitcherService.close();
-        }
-        root.targetMonitor = monitor || MangoService.activeMonitor || (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
-        root.isOpen = true;
+    function open(monitor) {
+        ControlCenterService.openPopup("media", monitor);
     }
 
-    function close(): void {
-        root.isOpen = false;
+    function close() {
+        if (isOpen) {
+            ControlCenterService.closePopup();
+        }
     }
 
-    function toggle(monitor): void {
-        if (root.isOpen) {
-            close();
-        } else {
-            open(monitor);
-        }
+    function toggle(monitor) {
+        ControlCenterService.togglePopup("media", monitor);
     }
 }

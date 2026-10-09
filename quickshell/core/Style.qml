@@ -65,8 +65,8 @@ Singleton {
 
     // ── FONT ─────────────────────────────────────────────────────
     // Mono = stats, clock, numbers; Sans = labels, UI
-    property string fontMono: _raw.fontMono ?? "Iosevka Nerd Font"
-    property string fontSans: _raw.fontSans ?? "Iosevka Nerd Font"
+    property string fontMono: _raw.fontMono ?? "Maple Mono NF"
+    property string fontSans: _raw.fontSans ?? "Maple Mono NF"
     readonly property string fontIcon: "Material Icons"
 
     readonly property var fs: ({

@@ -47,6 +47,7 @@ Singleton {
     // Semantic Material 3 Token Properties
     readonly property color bgBase: {
         switch (activeTheme) {
+            case "espresso":   return "#171717"; // $bg
             case "monochrome": return "#141414"; // ChillPill bgD
             case "vercel":     return "#000000"; // Vercel pitch black
             case "catppuccin": return "#11111b";
@@ -63,6 +64,7 @@ Singleton {
 
     readonly property color rawSurface: {
         switch (activeTheme) {
+            case "espresso":   return "#212121"; // $bg-2: lighten($bg, 4)
             case "monochrome": return "#191919"; // ChillPill bgD1
             case "vercel":     return "#0a0a0a"; // Vercel obsidian surface
             case "catppuccin": return "#1e1e2e";
@@ -81,6 +83,7 @@ Singleton {
 
     readonly property color rawSurfaceVariant: {
         switch (activeTheme) {
+            case "espresso":   return "#363636"; // $bg-4: lighten($bg, 12)
             case "monochrome": return "#323232"; // ChillPill bg5
             case "vercel":     return "#1f1f1f"; // Geist gray-200
             case "catppuccin": return "#313244";
@@ -98,6 +101,7 @@ Singleton {
 
     readonly property color rawSurfaceContainer: {
         switch (activeTheme) {
+            case "espresso":   return "#2b2b2b"; // $bg-3: lighten($bg, 8)
             case "monochrome": return "#252525"; // ChillPill bg3
             case "vercel":     return "#1a1a1a"; // Geist gray-100
             case "catppuccin": return "#181825";
@@ -125,6 +129,7 @@ Singleton {
 
     readonly property color primary: {
         switch (activeTheme) {
+            case "espresso":   return "#76bef9"; // $blue: primary interactive accent
             case "monochrome": return "#dadada"; // ChillPill fg (soft light gray)
             case "vercel":     return "#ededed"; // Geist gray-1000 high-contrast white
             case "catppuccin": return "#89b4fa";
@@ -141,6 +146,7 @@ Singleton {
 
     readonly property color textOnPrimary: {
         switch (activeTheme) {
+            case "espresso":   return "#171717"; // $bg
             case "monochrome": return "#161616"; // ChillPill bg
             case "vercel":     return "#ffffff"; // Crisp pure white text/icon on frosted glass
             case "catppuccin": return "#11111b";
@@ -157,6 +163,7 @@ Singleton {
 
     readonly property color primaryContainer: {
         switch (activeTheme) {
+            case "espresso":   return "#363636"; // $bg-4: lighten($bg, 12)
             case "monochrome": return "#353535"; // ChillPill focusBgL / bg6
             case "vercel":     return "#262626";
             case "catppuccin": return "#45475a";
@@ -173,6 +180,7 @@ Singleton {
 
     readonly property color secondary: {
         switch (activeTheme) {
+            case "espresso":   return "#76bef9"; // $blue
             case "monochrome": return "#b8b8b8"; // ChillPill accent (brightened for high readability)
             case "vercel":     return "#0070f3"; // Vercel electric blue accent
             case "catppuccin": return "#f5c2e7";
@@ -189,6 +197,7 @@ Singleton {
 
     readonly property color tertiary: {
         switch (activeTheme) {
+            case "espresso":   return "#7dc5a2"; // $green
             case "monochrome": return "#c4c4c4"; // ChillPill fg3
             case "vercel":     return "#12a594"; // Geist teal-700
             case "catppuccin": return "#94e2d5";
@@ -205,6 +214,7 @@ Singleton {
 
     readonly property color textPrimary: {
         switch (activeTheme) {
+            case "espresso":   return "#d9d9d9"; // $fg
             case "monochrome": return "#e7e7e7"; // ChillPill fg1 (warm light gray close to white)
             case "vercel":     return "#ededed"; // Geist gray-1000
             case "catppuccin": return "#cdd6f4";
@@ -221,6 +231,7 @@ Singleton {
 
     readonly property color textMuted: {
         switch (activeTheme) {
+            case "espresso":   return "#545454"; // $gray: lighten($bg, 24)
             case "monochrome": return "#9e9e9e"; // ChillPill fg4
             case "vercel":     return "#8f8f8f"; // Geist gray-700
             case "catppuccin": return "#a6adc8";
@@ -237,6 +248,7 @@ Singleton {
 
     readonly property color textDim: {
         switch (activeTheme) {
+            case "espresso":   return "#545454"; // $gray: lighten($bg, 24)
             case "monochrome": return "#6a6a6a"; // ChillPill fg6
             case "vercel":     return "#666666"; // Geist gray-500
             case "catppuccin": return "#6c7086";
@@ -253,6 +265,7 @@ Singleton {
 
     readonly property color outline: {
         switch (activeTheme) {
+            case "espresso":   return "#363636"; // $bg-4: lighten($bg, 12)
             case "monochrome": return "#484848"; // ChillPill borderBg1 / fg7
             case "vercel":     return "#2e2e2e"; // Geist gray-400
             case "catppuccin": return "#585b70";
@@ -269,6 +282,7 @@ Singleton {
 
     readonly property color error: {
         switch (activeTheme) {
+            case "espresso":   return "#ff7575"; // $red
             case "monochrome": return "#e32626"; // ChillPill deleting
             case "vercel":     return "#e5484d"; // Geist red-700
             case "catppuccin": return "#f38ba8";
@@ -286,6 +300,7 @@ Singleton {
     // Workspaces semantic indicators
     readonly property color workspaceOccupied: {
         switch (activeTheme) {
+            case "espresso":   return "#76bef9"; // $blue
             case "monochrome": return "#b8b8b8"; // Crisp light silver for occupied inactive workspace
             case "vercel":     return "#0070f3"; // Electric blue
             default:           return secondary;
@@ -294,6 +309,7 @@ Singleton {
 
     readonly property color workspaceInactive: {
         switch (activeTheme) {
+            case "espresso":   return "#545454"; // $gray: lighten($bg, 24)
             case "monochrome": return "#727272"; // Clearly visible balanced neutral gray on dark surface
             case "vercel":     return "#525252";
             case "catppuccin": return "#6c7086";
@@ -305,6 +321,164 @@ Singleton {
             case "ayu-dark":   return "#555f73";
             case "wallpaper":
             default: return textDim;
+        }
+    }
+
+    // Explicit Semantic Color Roles
+    readonly property color green: {
+        switch (activeTheme) {
+            case "espresso":   return "#7dc5a2"; // $green
+            case "monochrome": return "#a8a8a8";
+            case "vercel":     return "#00e599";
+            case "catppuccin": return "#a6e3a1";
+            case "everblush":  return "#8ccf7e";
+            case "everforest": return "#a7c080";
+            case "gruvbox":    return "#b8bb26";
+            case "monokai":    return "#a6e22e";
+            case "ayu_dark":
+            case "ayu-dark":   return "#aad94c";
+            case "wallpaper":
+            default: return tertiary;
+        }
+    }
+
+    readonly property color yellow: {
+        switch (activeTheme) {
+            case "espresso":   return "#f4c25f"; // $yellow
+            case "monochrome": return "#d1d1d1";
+            case "vercel":     return "#f5a623";
+            case "catppuccin": return "#f9e2af";
+            case "everblush":  return "#e5c76b";
+            case "everforest": return "#dbbc7f";
+            case "gruvbox":    return "#fabd2f";
+            case "monokai":    return "#e6db74";
+            case "ayu_dark":
+            case "ayu-dark":   return "#ffb454";
+            case "wallpaper":
+            default: return "#f4c25f";
+        }
+    }
+
+    readonly property color blue: {
+        switch (activeTheme) {
+            case "espresso":   return "#76bef9"; // $blue
+            case "monochrome": return "#b8b8b8";
+            case "vercel":     return "#0070f3";
+            case "catppuccin": return "#89b4fa";
+            case "everblush":  return "#67b0e8";
+            case "everforest": return "#7fbbb3";
+            case "gruvbox":    return "#83a598";
+            case "monokai":    return "#66d9ef";
+            case "ayu_dark":
+            case "ayu-dark":   return "#39bae6";
+            case "wallpaper":
+            default: return secondary;
+        }
+    }
+
+    readonly property color orange: {
+        switch (activeTheme) {
+            case "espresso":   return "#fa8a40"; // $orange
+            case "monochrome": return "#c8c8c8";
+            case "vercel":     return "#f56400";
+            case "catppuccin": return "#fab387";
+            case "everblush":  return "#e59866";
+            case "everforest": return "#e69875";
+            case "gruvbox":    return "#fe8019";
+            case "monokai":    return "#fd971f";
+            case "ayu_dark":
+            case "ayu-dark":   return "#ff8f40";
+            case "wallpaper":
+            default: return primary;
+        }
+    }
+
+    readonly property color red: {
+        switch (activeTheme) {
+            case "espresso":   return "#ff7575"; // $red
+            default:           return error;
+        }
+    }
+
+    // Semantic Tile & Control Accent Tokens
+    readonly property color wifiActive: {
+        switch (activeTheme) {
+            case "espresso":   return blue; // #76bef9
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return activeTileBg;
+        }
+    }
+
+    readonly property color bluetoothActive: {
+        switch (activeTheme) {
+            case "espresso":   return blue; // #76bef9
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return activeTileBg;
+        }
+    }
+
+    readonly property color dndActive: {
+        switch (activeTheme) {
+            case "espresso":   return blue; // #76bef9
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return activeTileBg;
+        }
+    }
+
+    readonly property color nightLightActive: {
+        switch (activeTheme) {
+            case "espresso":   return yellow; // #f4c25f
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return yellow;
+        }
+    }
+
+    readonly property color volumeActive: {
+        switch (activeTheme) {
+            case "espresso":   return blue; // #76bef9
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return primary;
+        }
+    }
+
+    readonly property color brightnessActive: {
+        switch (activeTheme) {
+            case "espresso":   return blue; // #76bef9 (SAME Espresso BLUE as volume)
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return yellow;
+        }
+    }
+
+    readonly property color conservationActive: {
+        switch (activeTheme) {
+            case "espresso":   return green; // #7dc5a2
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return green;
+        }
+    }
+
+    readonly property color rapidChargeActive: {
+        switch (activeTheme) {
+            case "espresso":   return yellow; // #f4c25f (YELLOW for Rapid Charge)
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return orange;
+        }
+    }
+
+    readonly property color selectionActive: {
+        switch (activeTheme) {
+            case "espresso":   return blue; // #76bef9
+            case "monochrome":
+            case "vercel":     return activeTileBg;
+            default:           return activeTileBg;
         }
     }
 }

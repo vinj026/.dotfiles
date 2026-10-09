@@ -165,7 +165,8 @@ Item {
                     { "label": "Everblush",  "value": "everblush" },
                     { "label": "Catppuccin", "value": "catppuccin" },
                     { "label": "Everforest", "value": "everforest" },
-                    { "label": "Vercel",     "value": "vercel" }
+                    { "label": "Vercel",     "value": "vercel" },
+                    { "label": "Espresso",   "value": "espresso" }
                 ]
 
                 Rectangle {

@@ -14,6 +14,17 @@ cat << 'PYEOF' > /tmp/gen_theme.py
 import json
 import sys
 import os
+import colorsys
+
+def sass_lighten(hex_color, amount):
+    hex_code = hex_color.lstrip('#')
+    r = int(hex_code[0:2], 16) / 255.0
+    g = int(hex_code[2:4], 16) / 255.0
+    b = int(hex_code[4:6], 16) / 255.0
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    l = min(1.0, max(0.0, l + amount / 100.0))
+    nr, ng, nb = colorsys.hls_to_rgb(h, l, s)
+    return f"#{round(nr * 255):02x}{round(ng * 255):02x}{round(nb * 255):02x}"
 
 theme = sys.argv[1]
 colors_file = os.path.expanduser("~/.cache/matugen/colors.json")
@@ -81,6 +92,19 @@ palettes = {
         "textPrimary": "#e6e1cf", "textMuted": "#bfbdb6", "textDim": "#707a8c",
         "outline": "#3d424d", "textOnPrimary": "#0b0e14", "primaryContainer": "#e6b450",
         "secondary": "#39bae6", "tertiary": "#aad94c", "error": "#f07178"
+    },
+    "espresso": {
+        "primary": "#76bef9", "bgBase": "#171717",
+        "surface": sass_lighten("#171717", 4),
+        "surfaceVariant": sass_lighten("#171717", 12),
+        "surfaceContainer": sass_lighten("#171717", 8),
+        "textPrimary": "#d9d9d9",
+        "textMuted": sass_lighten("#171717", 24),
+        "textDim": sass_lighten("#171717", 24),
+        "outline": sass_lighten("#171717", 12),
+        "textOnPrimary": "#171717",
+        "primaryContainer": sass_lighten("#171717", 12),
+        "secondary": "#76bef9", "tertiary": "#7dc5a2", "error": "#ff7575"
     }
 }
 

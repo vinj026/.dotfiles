@@ -42,13 +42,13 @@ def write_file(path, value):
     except Exception as e:
         return False, f"Write error: {e}"
 
-    # Fallback to pkexec
-    cmd = ["pkexec", "sh", "-c", f"printf '%s\\n' '{val_str}' > '{path}'"]
+    # Fallback to pkexec (use --disable-internal-agent and DEVNULL to prevent TTY password lockouts)
+    cmd = ["pkexec", "--disable-internal-agent", "sh", "-c", f"printf '%s\\n' '{val_str}' > '{path}'"]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=3, stdin=subprocess.DEVNULL)
         if res.returncode == 0:
             return True, "pkexec write succeeded"
-        return False, f"pkexec failed: {res.stderr.strip()}"
+        return False, f"pkexec failed: {res.stderr.strip() or 'No auth agent / permission denied'}"
     except Exception as e:
         return False, f"Elevation failed: {e}"
 

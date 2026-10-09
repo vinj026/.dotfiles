@@ -2,6 +2,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Bluetooth
 
 Singleton {
@@ -9,8 +10,27 @@ Singleton {
 
     // Get first adapter
     readonly property BluetoothAdapter adapter: Bluetooth.adapters.values[0] ?? null
+    property bool rfkillPowered: true
+
+    Process {
+        id: rfkillQuery
+        command: ["sh", "-c", "rfkill list bluetooth | grep -qi 'soft blocked: yes' && echo 'off' || echo 'on'"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.rfkillPowered = (text.trim() === "on");
+            }
+        }
+    }
+
+    Timer {
+        interval: 3000
+        running: true
+        repeat: true
+        onTriggered: if (!rfkillQuery.running) rfkillQuery.running = true
+    }
     
-    readonly property bool isPowered: adapter?.powered ?? false
+    readonly property bool isPowered: adapter ? adapter.powered : rfkillPowered
     readonly property bool isConnected: connectedDevices.length > 0
 
     // Filter devices whose status is connected
@@ -30,7 +50,15 @@ Singleton {
 
     // Controls
     function togglePower() {
-        const target = !root.isPowered
-        Quickshell.execDetached(["bluetoothctl", "power", target ? "on" : "off"])
+        if (adapter) {
+            const target = !adapter.powered;
+            Quickshell.execDetached(["bluetoothctl", "power", target ? "on" : "off"]);
+        } else {
+            const target = !root.rfkillPowered;
+            root.rfkillPowered = target;
+            Quickshell.execDetached(["rfkill", target ? "unblock" : "block", "bluetooth"]);
+            rfkillTimer.restart();
+        }
     }
+    Timer { id: rfkillTimer; interval: 500; onTriggered: if (!rfkillQuery.running) rfkillQuery.running = true }
 }

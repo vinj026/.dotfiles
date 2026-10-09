@@ -18,7 +18,7 @@ PanelWindow {
         return screen === Quickshell.screens[0];
     }
 
-    visible: isTargetScreen && NotificationService.hasNotifications
+    visible: isTargetScreen && NotificationService.hasNotifications && !ControlCenterService.dndEnabled
 
     anchors {
         top: true

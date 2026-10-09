@@ -2,31 +2,23 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import "."
-import "../core" as Core
 
 Singleton {
     id: root
 
-    property bool isOpen: false
+    readonly property bool isOpen: ControlCenterService.activePopup === "wifi"
 
-    function open(monitor): void {
-        isOpen = true;
-        BatteryService.close();
-        ControlCenterService.open(monitor);
-        Core.Network.refreshAll();
-        Core.Network.rescan();
+    function open(monitor) {
+        ControlCenterService.openPopup("wifi", monitor);
     }
 
-    function close(): void {
-        isOpen = false;
-    }
-
-    function toggle(monitor): void {
-        if (ControlCenterService.isOpen && isOpen) {
-            ControlCenterService.close();
-            isOpen = false;
-        } else {
-            open(monitor);
+    function close() {
+        if (isOpen) {
+            ControlCenterService.closePopup();
         }
+    }
+
+    function toggle(monitor) {
+        ControlCenterService.togglePopup("wifi", monitor);
     }
 }

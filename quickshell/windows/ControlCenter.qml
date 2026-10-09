@@ -462,7 +462,8 @@ PanelWindow {
                     { name: "Gruvbox", id: "gruvbox" },
                     { name: "Everforest", id: "everforest" },
                     { name: "Monokai", id: "monokai" },
-                    { name: "Catppuccin", id: "catppuccin" }
+                    { name: "Catppuccin", id: "catppuccin" },
+                    { name: "Espresso", id: "espresso" }
                 ]
                 property int currentIndex: 0
 

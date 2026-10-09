@@ -10,6 +10,7 @@ Singleton {
     readonly property bool hasNotifications: notifications.length > 0
 
     function playNotificationSound(notif): void {
+        if (ControlCenterService.dndEnabled) return;
         if (notif && notif.hints && notif.hints["suppress-sound"]) {
             return;
         }

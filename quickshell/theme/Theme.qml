@@ -12,12 +12,18 @@ Singleton {
     property color surface: Colors.surface
     property color surfaceVariant: Colors.surfaceVariant
     property color surfaceContainer: Colors.surfaceContainer
+    property color surfaceContainerHigh: Colors.surfaceVariant
     property color activeTileBg: Colors.activeTileBg
     property color primary: Colors.primary
     property color textOnPrimary: Colors.textOnPrimary
     property color primaryContainer: Colors.primaryContainer
     property color secondary: Colors.secondary
     property color tertiary: Colors.tertiary
+    property color green: Colors.green
+    property color yellow: Colors.yellow
+    property color blue: Colors.blue
+    property color orange: Colors.orange
+    property color red: Colors.red
     property color textPrimary: Colors.textPrimary
     property color textMuted: Colors.textMuted
     property color textDim: Colors.textDim
@@ -25,6 +31,17 @@ Singleton {
     property color error: Colors.error
     property color workspaceOccupied: Colors.workspaceOccupied
     property color workspaceInactive: Colors.workspaceInactive
+
+    // Semantic Control Active Tokens
+    property color wifiActive: Colors.wifiActive
+    property color bluetoothActive: Colors.bluetoothActive
+    property color dndActive: Colors.dndActive
+    property color nightLightActive: Colors.nightLightActive
+    property color volumeActive: Colors.volumeActive
+    property color brightnessActive: Colors.brightnessActive
+    property color conservationActive: Colors.conservationActive
+    property color rapidChargeActive: Colors.rapidChargeActive
+    property color selectionActive: Colors.selectionActive
 
     // Material 3 Shape Scale Tokens
     property int shapeCornerNone: 0
@@ -106,18 +123,18 @@ Singleton {
     property real springOvershootSubtle: 1.15
     property real springOvershootExpressive: 1.35
 
-    // Material 3 Battery Palette (Matching Reference Design)
-    property color batteryGreenFill: "#69db7c"
-    property color batteryGreenBase: "#40c057"
-    property color batteryGreenText: "#1b5e20"
+    // Material 3 Battery Palette (Matching Reference Design & Semantic Themes)
+    property color batteryGreenFill: Colors.green
+    property color batteryGreenBase: Colors.green
+    property color batteryGreenText: Colors.green
 
-    property color batteryWarnFill: "#ffd43b"
-    property color batteryWarnBase: "#f76707"
-    property color batteryWarnText: "#7f1d1d"
+    property color batteryWarnFill: Colors.yellow
+    property color batteryWarnBase: Colors.yellow
+    property color batteryWarnText: Colors.yellow
 
-    property color batteryCritFill: "#ff8787"
-    property color batteryCritBase: "#c92a2a"
-    property color batteryCritText: "#491212"
+    property color batteryCritFill: Colors.error
+    property color batteryCritBase: Colors.error
+    property color batteryCritText: Colors.error
 
     function scaleFor(screen, damping): real {
         if (!screen) return 1.0

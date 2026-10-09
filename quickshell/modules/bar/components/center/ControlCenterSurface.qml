@@ -15,14 +15,14 @@ Item {
     property bool active: false
     focus: active
 
-    property string currentView: WifiService.isOpen ? "wifi" : "main"
+    property string currentView: ControlCenterService.activePopup === "wifi" ? "wifi" : "main"
 
     Connections {
-        target: WifiService
-        function onIsOpenChanged() {
-            if (WifiService.isOpen) {
+        target: ControlCenterService
+        function onActivePopupChanged() {
+            if (ControlCenterService.activePopup === "wifi") {
                 root.currentView = "wifi";
-            } else if (root.currentView === "wifi") {
+            } else if (ControlCenterService.activePopup === "battery" || ControlCenterService.activePopup === "controlcenter") {
                 root.currentView = "main";
             }
         }
@@ -32,8 +32,7 @@ Item {
         if (event.key === Qt.Key_Escape) {
             event.accepted = true;
             if (root.currentView === "wifi") {
-                root.currentView = "main";
-                WifiService.close();
+                ControlCenterService.openPopup("battery", "");
             } else {
                 ControlCenterService.close();
             }
@@ -782,8 +781,7 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         if (!root.wifiEnabled) root.toggleWifi();
-                                        root.currentView = "wifi";
-                                        WifiService.isOpen = true;
+                                        ControlCenterService.openPopup("wifi", "");
                                     }
                                 }
                             }
@@ -1754,8 +1752,7 @@ Item {
         Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
         onBackClicked: {
-            root.currentView = "main";
-            WifiService.close();
+            ControlCenterService.openPopup("battery", "");
         }
     }
 }

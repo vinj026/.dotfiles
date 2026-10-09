@@ -15,6 +15,7 @@ Singleton {
     property int speed: 1
     property string brightness: "high"
     property var zones: ["#00d4ff", "#00d4ff", "#00d4ff", "#00d4ff"]
+    property bool permission: true
     property string lastError: ""
 
     function refresh() {
@@ -77,6 +78,7 @@ Singleton {
                     try {
                         let d = JSON.parse(text);
                         if (d.state) updateFromState(d.state);
+                        else updateFromState(d);
                     } catch (e) {}
                     proc.destroy();
                 }
@@ -85,13 +87,15 @@ Singleton {
     }
 
     function updateFromState(d) {
+        if (!d) return;
         if (d.supported !== undefined) root.supported = d.supported;
+        if (d.permission !== undefined) root.permission = d.permission;
         if (d.power !== undefined) root.power = d.power;
         if (d.mode !== undefined) root.mode = d.mode;
         if (d.speed !== undefined) root.speed = d.speed;
         if (d.brightness !== undefined) root.brightness = d.brightness;
-        if (d.zones !== undefined) root.zones = d.zones;
-        if (d.error) root.lastError = d.error;
+        if (d.zones !== undefined && Array.isArray(d.zones)) root.zones = d.zones;
+        if (d.error !== undefined) root.lastError = d.error || "";
     }
 
     Process {

@@ -10,7 +10,7 @@ import json
 import subprocess
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-LOQ_RGB_BIN = os.path.join(SCRIPT_DIR, "loq-rgb", "bin", "loq-rgb")
+LOQ_RGB_BIN = os.path.join(SCRIPT_DIR, "lenovo-rgb")
 STATE_FILE = os.path.join(SCRIPT_DIR, "rgb_state.json")
 
 DEFAULT_STATE = {
@@ -42,7 +42,7 @@ def save_state(s):
 
 def apply_rgb(state):
     if not os.path.exists(LOQ_RGB_BIN):
-        state["error"] = "loq-rgb binary not found"
+        state["error"] = "lenovo-rgb binary not found"
         return False
 
     mode = state.get("mode", "static")
@@ -52,9 +52,7 @@ def apply_rgb(state):
     power = state.get("power", True)
 
     if not power or brightness == "off":
-        mode = "static"
-        zones = ["#000000", "#000000", "#000000", "#000000"]
-        b_arg = "low"
+        b_arg = "off"
     else:
         b_arg = "high" if brightness == "high" else "low"
 
@@ -71,20 +69,19 @@ def apply_rgb(state):
 
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=2)
+        if res.stdout and res.stdout.strip().startswith("{"):
+            try:
+                hw_state = json.loads(res.stdout)
+                state.update(hw_state)
+                save_state(state)
+                return (res.returncode == 0)
+            except Exception:
+                pass
         if res.returncode == 0:
             state["error"] = None
+            save_state(state)
             return True
-    except Exception:
-        pass
-
-    # Try pkexec if direct failed
-    pk_cmd = ["pkexec"] + cmd
-    try:
-        res = subprocess.run(pk_cmd, capture_output=True, text=True, timeout=4)
-        if res.returncode == 0:
-            state["error"] = None
-            return True
-        state["error"] = "Permission denied. Install 99-lenovo-rgb.rules to /etc/udev/rules.d/"
+        state["error"] = res.stderr.strip() or "Failed to send RGB packet to hardware"
         return False
     except Exception as e:
         state["error"] = f"Failed to execute: {e}"
@@ -94,6 +91,14 @@ def main():
     state = load_state()
 
     if len(sys.argv) < 2 or sys.argv[1] == "status":
+        if os.path.exists(LOQ_RGB_BIN):
+            try:
+                res = subprocess.run([LOQ_RGB_BIN, "status"], capture_output=True, text=True, timeout=2)
+                if res.stdout and res.stdout.strip().startswith("{"):
+                    print(res.stdout.strip())
+                    return
+            except Exception:
+                pass
         print(json.dumps(state, indent=2))
         return
 

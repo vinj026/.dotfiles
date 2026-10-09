@@ -7,7 +7,7 @@ Singleton {
     id: root
 
     readonly property var availableStyles: ["notch", "floating", "classic"]
-    readonly property var availableThemes: ["monochrome", "vercel", "wallpaper", "gruvbox", "everblush", "everforest", "monokai", "catppuccin", "ayu_dark", "ayu-dark"]
+    readonly property var availableThemes: ["monochrome", "vercel", "wallpaper", "gruvbox", "everblush", "everforest", "monokai", "catppuccin", "ayu_dark", "ayu-dark", "espresso"]
 
     property string currentStyle: "notch"
     property string currentTheme: "wallpaper"

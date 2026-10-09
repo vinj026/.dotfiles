@@ -178,6 +178,8 @@ Item {
 
         implicitWidth: defaultRow.implicitWidth + (sideZoneWidth * 2)
         implicitHeight: defaultRow.implicitHeight
+        width: implicitWidth
+        height: parent ? parent.height : implicitHeight
 
         // ── 1. CENTER ZONE (auto): Workspaces + Clock (STRICTLY centered, NEVER moves) ──
         Row {
@@ -282,6 +284,12 @@ Item {
                 NumberAnimation { duration: 160; easing.type: Easing.OutQuad }
             }
 
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: ControlCenterService.togglePopup("media", root.screen.name)
+            }
+
             Row {
                 id: leftSection
                 anchors.centerIn: parent
@@ -330,12 +338,6 @@ Item {
                                 }
                             }
                         }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent; anchors.margins: -4
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: MediaPopupService.toggle(root.screen.name)
                     }
                 }
 
@@ -433,6 +435,12 @@ Item {
                     anchors.bottom: parent.bottom
                     width: rightSection.colW
 
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: ControlCenterService.togglePopup("wifi", root.screen.name)
+                    }
+
                     Text {
                         id: wifiText
                         anchors.centerIn: parent
@@ -464,6 +472,12 @@ Item {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     width: rightSection.colW
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: ControlCenterService.togglePopup("battery", root.screen.name)
+                    }
 
                     Item {
                         id: batItem

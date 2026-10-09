@@ -98,4 +98,6 @@ Singleton {
         repeat: true
         onTriggered: root.refresh()
     }
+
+    Component.onCompleted: root.refresh()
 }

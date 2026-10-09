@@ -116,19 +116,7 @@ Row {
                 id: shapeWrapper
                 anchors.centerIn: parent
 
-                width: {
-                    if (tagContainer.isActive) return 16;
-                    if (tagContainer.isUrgent) return 13;
-                    if (tagContainer.isOccupied) return 9;
-                    return 6;
-                }
-
-                height: {
-                    if (tagContainer.isActive) return 16;
-                    if (tagContainer.isUrgent) return 13;
-                    if (tagContainer.isOccupied) return 9;
-                    return 6;
-                }
+                width: 9; height: 9
 
                 scale: (tagContainer.isActive ? root.popScale : 1.0) * (mouseArea.containsMouse ? 1.22 : 1.0)
                 opacity: {

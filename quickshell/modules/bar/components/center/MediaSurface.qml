@@ -18,7 +18,7 @@ Item {
     }
 
     implicitWidth: 410
-    implicitHeight: rightSection.height + 24
+    implicitHeight: Math.max(136, rightSection.height + 24)
 
     // Track change pulse effect
     property real sealPulse: 0
@@ -36,15 +36,27 @@ Item {
     }
 
     // ────────────────────────────────────────────────────────────
-    // 1. LEFT COLUMN: Rounded Cover Art (matches right section height)
+    // Unified Content Container
     // ────────────────────────────────────────────────────────────
     Item {
-        id: coverContainer
-        width: rightSection.height
-        height: rightSection.height
+        id: contentContainer
         anchors.left: parent.left
+        anchors.right: parent.right
         anchors.leftMargin: 12
+        anchors.rightMargin: 12
         anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: 2
+        height: rightSection.height
+
+        // ────────────────────────────────────────────────────────────
+        // 1. LEFT COLUMN: Rounded Cover Art (matches right section height)
+        // ────────────────────────────────────────────────────────────
+        Item {
+            id: coverContainer
+            width: rightSection.height
+            height: rightSection.height
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
 
         Rectangle {
             id: coverBg
@@ -136,7 +148,7 @@ Item {
         anchors.left: coverContainer.right
         anchors.leftMargin: 16
         anchors.right: parent.right
-        anchors.rightMargin: 12
+        anchors.rightMargin: 0
         anchors.verticalCenter: parent.verticalCenter
         height: seekbarRow.y + seekbarRow.height
 
@@ -415,3 +427,5 @@ Item {
         }
     }
 }
+}
+

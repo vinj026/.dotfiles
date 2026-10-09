@@ -37,11 +37,11 @@ Item {
     // Rest: targetCenterWidth x 30, y: 0, radius: 14
     readonly property real ccTargetW: (controlCenterSurface && controlCenterSurface.implicitWidth > 0)
         ? controlCenterSurface.implicitWidth
-        : 410
+        : 600
 
     readonly property real ccTargetH: (controlCenterSurface && controlCenterSurface.implicitHeight > 0)
         ? controlCenterSurface.implicitHeight
-        : 300
+        : 240
 
     readonly property real mediaTargetW: (mediaSurface && mediaSurface.implicitWidth > 0)
         ? mediaSurface.implicitWidth
