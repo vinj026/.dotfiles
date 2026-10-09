@@ -41,8 +41,10 @@ Singleton {
         isLoading = false;
         
         let proc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
-        // Use grim to capture the screen where the cursor is, or all screens if we specify output
-        proc.command = ["grim", fullScreenshot];
+        // Delay screenshot slightly to let Notch UI close and layout settle
+        // Use grim -o to capture only the active screen so coordinates match
+        let outputArg = targetMonitor ? `-o "${targetMonitor}"` : "";
+        proc.command = ["bash", "-c", `sleep 0.3 && grim ${outputArg} "${fullScreenshot}"`];
         proc.exited.connect((code) => {
             if (code === 0) {
                 root.grimReady = true;

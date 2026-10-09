@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
@@ -11,7 +12,7 @@ PanelWindow {
 
     required property ShellScreen screen
 
-    WlrLayershell.namespace: "search"
+    WlrLayershell.namespace: "selection"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
@@ -61,7 +62,13 @@ PanelWindow {
         ctsEnabled: true
         
         onRegionSelected: (x, y, w, h) => {
-            SearchService.searchRegion(x, y, w, h)
+            const dpr = Screen.devicePixelRatio;
+            SearchService.searchRegion(
+                Math.round(x * dpr), 
+                Math.round(y * dpr), 
+                Math.round(w * dpr), 
+                Math.round(h * dpr)
+            )
         }
         
         onRightClicked: {
