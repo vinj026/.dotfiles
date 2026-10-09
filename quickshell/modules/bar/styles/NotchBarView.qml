@@ -18,7 +18,8 @@ Item {
     readonly property bool isControlCenterActive: ControlCenterService.isOpen && (ControlCenterService.targetMonitor === "" || ControlCenterService.targetMonitor === root.screen.name)
     readonly property bool isMediaActive: MediaPopupService.isOpen && (MediaPopupService.targetMonitor === "" || MediaPopupService.targetMonitor === root.screen.name)
     readonly property bool isWallpaperActive: WallpaperSwitcherService.isOpen && (WallpaperSwitcherService.targetMonitor === "" || WallpaperSwitcherService.targetMonitor === root.screen.name)
-    readonly property bool isOverlayActive: root.isLauncherActive || root.isControlCenterActive || root.isMediaActive || root.isWallpaperActive
+    readonly property bool isScreenshotActive: ScreenshotService.isOpen && (ScreenshotService.targetMonitor === "" || ScreenshotService.targetMonitor === root.screen.name)
+    readonly property bool isOverlayActive: root.isLauncherActive || root.isControlCenterActive || root.isMediaActive || root.isWallpaperActive || root.isScreenshotActive
 
     // Base notch width based on active page
     readonly property real baseWidth: Math.max(160, centerIsland.baseWidth + 44)
@@ -31,32 +32,31 @@ Item {
     // ALWAYS strictly centered
     readonly property real targetCenterLeft: (width - root.targetCenterWidth) / 2
 
-    // Target Morphing Dimensions & Coordinates:
-    // Launcher: 260 x 240, y: 8, radius: 10
-    // Control Center (Material 3 Expressive): 500 x 280, y: 8, radius: 12
-    // Rest: targetCenterWidth x 30, y: 0, radius: 14
+    // Target Morphing Dimensions & Coordinates
     readonly property real ccTargetW: (controlCenterSurface && controlCenterSurface.implicitWidth > 0)
-        ? controlCenterSurface.implicitWidth
-        : 600
-
+        ? controlCenterSurface.implicitWidth : 600
     readonly property real ccTargetH: (controlCenterSurface && controlCenterSurface.implicitHeight > 0)
-        ? controlCenterSurface.implicitHeight
-        : 240
+        ? controlCenterSurface.implicitHeight : 240
 
     readonly property real mediaTargetW: (mediaSurface && mediaSurface.implicitWidth > 0)
-        ? mediaSurface.implicitWidth
-        : 410
+        ? mediaSurface.implicitWidth : 410
 
     readonly property real wpTargetW: 440
     readonly property real wpTargetH: 180
 
-    readonly property real targetW: root.isLauncherActive ? 260 : (root.isControlCenterActive ? root.ccTargetW : (root.isMediaActive ? root.mediaTargetW : (root.isWallpaperActive ? root.wpTargetW : root.targetCenterWidth)))
-    readonly property real targetH: root.isLauncherActive ? 240 : (root.isControlCenterActive ? root.ccTargetH : (root.isMediaActive ? (mediaSurface && mediaSurface.implicitHeight > 0 ? mediaSurface.implicitHeight : 136) : (root.isWallpaperActive ? root.wpTargetH : Theme.notchHeight)))
+    readonly property real scTargetW: (screenshotSurface && screenshotSurface.implicitWidth > 0)
+        ? screenshotSurface.implicitWidth : 480
+    readonly property real scTargetH: (screenshotSurface && screenshotSurface.implicitHeight > 0)
+        ? screenshotSurface.implicitHeight : 44
+
+    readonly property real targetW: root.isLauncherActive ? 260 : (root.isControlCenterActive ? root.ccTargetW : (root.isMediaActive ? root.mediaTargetW : (root.isWallpaperActive ? root.wpTargetW : (root.isScreenshotActive ? root.scTargetW : root.targetCenterWidth))))
+    readonly property real targetH: root.isLauncherActive ? 240 : (root.isControlCenterActive ? root.ccTargetH : (root.isMediaActive ? (mediaSurface && mediaSurface.implicitHeight > 0 ? mediaSurface.implicitHeight : 136) : (root.isWallpaperActive ? root.wpTargetH : (root.isScreenshotActive ? root.scTargetH : Theme.notchHeight))))
     readonly property real targetX: root.isOverlayActive
         ? ((width - root.targetW) / 2)
         : root.targetCenterLeft
     readonly property real targetY: root.isOverlayActive ? 10 : 0
-    readonly property real targetRadius: root.isControlCenterActive ? 16 : (root.isLauncherActive ? 10 : (root.isMediaActive ? 16 : (root.isWallpaperActive ? 16 : 14)))
+    readonly property real targetRadius: root.isControlCenterActive ? 16 : (root.isLauncherActive ? 10 : (root.isMediaActive ? 16 : (root.isWallpaperActive ? 16 : (root.isScreenshotActive ? 22 : 14))))
+
 
     // Ukishima Morph Closeness (Chebyshev distance normalized to 110px)
     readonly property real morphCloseness: {
@@ -111,6 +111,7 @@ Item {
     readonly property bool isLauncherFullyExpanded: root.isLauncherActive && root.targetH > 100 && (morphIsland.height >= root.targetH - 25)
     readonly property bool isMediaFullyExpanded: root.isMediaActive && root.targetH > 80 && (morphIsland.height >= root.targetH - 20)
     readonly property bool isWallpaperFullyExpanded: root.isWallpaperActive && root.targetH > 100 && (morphIsland.height >= root.targetH - 25)
+    readonly property bool isScreenshotFullyExpanded: root.isScreenshotActive && (morphIsland.width >= root.targetW - 25)
 
     // Expose items for input region masking in Bar.qml
     property alias morphIslandItem: morphIsland
@@ -347,6 +348,22 @@ Item {
 
             Behavior on opacity {
                 enabled: root.isWallpaperActive
+                NumberAnimation {
+                    duration: 140
+                    easing.type: Theme.easeStandard
+                }
+            }
+        }
+
+        ScreenshotSurface {
+            id: screenshotSurface
+            anchors.fill: parent
+            active: root.isScreenshotActive
+            opacity: root.isScreenshotFullyExpanded ? 1.0 : 0.0
+            visible: root.isScreenshotActive && (opacity > 0.01)
+
+            Behavior on opacity {
+                enabled: root.isScreenshotActive
                 NumberAnimation {
                     duration: 140
                     easing.type: Theme.easeStandard

@@ -233,10 +233,6 @@ ShellRoot {
             WallpaperSwitcherWindow {
                 screen: scopeRoot.modelData
             }
-
-            ScreenshotOverlay {
-                screen: scopeRoot.modelData
-            }
         }
     }
 }

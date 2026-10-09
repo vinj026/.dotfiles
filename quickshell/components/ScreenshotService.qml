@@ -8,17 +8,29 @@ Singleton {
     id: root
 
     property bool isOpen: false
+    property string targetMonitor: ""
 
-    function toggle() {
-        isOpen = !isOpen
+    function toggle(screenName) {
+        if (screenName !== undefined) {
+            targetMonitor = screenName;
+        } else {
+            targetMonitor = "";
+        }
+        isOpen = !isOpen;
     }
 
-    function open() {
-        isOpen = true
+    function open(screenName) {
+        if (screenName !== undefined) {
+            targetMonitor = screenName;
+        } else {
+            targetMonitor = "";
+        }
+        isOpen = true;
     }
 
     function close() {
-        isOpen = false
+        isOpen = false;
+        targetMonitor = "";
     }
 
     function takeFullscreen() {
