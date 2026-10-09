@@ -14,18 +14,18 @@ PanelWindow {
 
     WlrLayershell.namespace: "selection"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    exclusiveZone: -1
     
     // We only want to show the window on the monitor that requested it
     visible: SearchService.isOpen && (SearchService.targetMonitor === "" || SearchService.targetMonitor === root.screen.name)
 
-    // Anchor only to top-left and manually set size to prevent the WM from 
-    // treating this as a fullscreen layer-shell which might trigger layout resets
-    anchors.top: true
-    anchors.left: true
-    implicitWidth: screen.width
-    implicitHeight: screen.height
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
+    }
     
     color: "transparent"
     
