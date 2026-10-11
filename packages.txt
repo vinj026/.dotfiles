@@ -29,6 +29,7 @@ matugen-bin
 awww
 
 # Clipboard & Wayland Utilities
+hyprlock
 cliphist
 wl-clipboard
 xdg-desktop-portal-wlr

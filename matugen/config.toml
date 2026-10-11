@@ -38,4 +38,8 @@ input_path = "~/.config/matugen/templates/nvim-colors.json"
 output_path = "~/.cache/matugen/nvim-colors.json"
 post_hook = "pkill -SIGUSR1 nvim || true"
 
+[templates.hyprlock]
+input_path = "~/.config/matugen/templates/hyprlock-colors.conf"
+output_path = "~/.config/hypr/hyprlock-colors.conf"
+
 

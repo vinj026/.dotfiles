@@ -88,6 +88,7 @@ else
         awww
         cliphist
         wl-clipboard
+        hyprlock
         xdg-desktop-portal-wlr
         xdg-desktop-portal
         brightnessctl
@@ -155,6 +156,7 @@ backup_if_real() {
 CONFIG_ITEMS=(
     mango
     mango-modular
+    hypr
     quickshell
     kitty
     alacritty
@@ -205,7 +207,7 @@ link_item() {
     log_success "Linked $name -> $dest"
 }
 
-for item in mango quickshell matugen scripts kitty alacritty gtk-3.0 gtk-4.0 qt6ct qt5ct btop fastfetch environment.d; do
+for item in mango quickshell hypr matugen scripts kitty alacritty gtk-3.0 gtk-4.0 qt6ct qt5ct btop fastfetch environment.d; do
     if [ -d "$DOTFILES_DIR/$item" ]; then
         link_item "$DOTFILES_DIR/$item" "$CONFIG_DIR/$item"
     fi
